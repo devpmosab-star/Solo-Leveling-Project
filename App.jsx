@@ -1,16 +1,510 @@
-
 import { useEffect, useMemo, useState } from 'react'
-const todayKey=()=>new Date().toISOString().slice(0,10)
-const defaultState={unlocked:false,player:{name:'Mosab',title:'Shadow Monarch Candidate',level:1,xp:0,coins:250,streak:0,lastActive:'',avatar:'影'},stats:{strength:20,agility:20,intelligence:20,endurance:20,discipline:20,shadow:10},statPoints:8,quests:[{id:1,title:'تمرين 20 دقيقة',type:'Daily',rank:'C',xp:90,coins:30,done:false},{id:2,title:'مذاكرة 45 دقيقة',type:'Daily',rank:'B',xp:130,coins:45,done:false},{id:3,title:'شرب 2 لتر ماء',type:'Daily',rank:'E',xp:50,coins:15,done:false},{id:4,title:'إنجاز أهم مهمة اليوم',type:'Main',rank:'A',xp:220,coins:80,done:false},{id:5,title:'مراجعة أسبوعية',type:'Weekly',rank:'S',xp:500,coins:160,done:false}],skills:[{id:1,name:'Shadow Step',category:'Agility',level:1,power:35},{id:2,name:'Iron Will',category:'Discipline',level:1,power:30},{id:3,name:'Mana Focus',category:'Intelligence',level:1,power:38}],shop:[{id:1,name:'راحة 30 دقيقة',cost:80,type:'Reward',bought:0},{id:2,name:'مشروب مفضل',cost:120,type:'Reward',bought:0},{id:3,name:'ترقية ظل',cost:220,type:'Upgrade',bought:0},{id:4,name:'يوم بدون عقوبة',cost:350,type:'Protection',bought:0}],achievements:[],history:[],logs:['System initialized.','Ultra Hunter System is ready.']}
-const achievementsList=[{id:'first_quest',title:'First Blood',desc:'أنجز أول مهمة'},{id:'ten_quests',title:'Quest Hunter',desc:'أنجز 10 مهام'},{id:'level_5',title:'Rising Hunter',desc:'وصل Level 5'},{id:'rich',title:'Coin Collector',desc:'اجمع 1000 Coin'},{id:'shadow_50',title:'Shadow Awakening',desc:'ارفع قوة الظل إلى 50'}]
-function loadState(){try{const saved=localStorage.getItem('solo-ultra-state');return saved?JSON.parse(saved):defaultState}catch{return defaultState}}
-export default function App(){const[state,setState]=useState(loadState);const[tab,setTab]=useState('dashboard');const[toast,setToast]=useState('');const[questForm,setQuestForm]=useState({title:'',type:'Daily',rank:'C',xp:80,coins:25});const[skillForm,setSkillForm]=useState({name:'',category:'Strength',level:1,power:25});useEffect(()=>{localStorage.setItem('solo-ultra-state',JSON.stringify(state))},[state]);useEffect(()=>{if(state.player.lastActive!==todayKey()){setState(prev=>({...prev,player:{...prev.player,streak:prev.player.lastActive?prev.player.streak+1:1,lastActive:todayKey()},quests:prev.quests.map(q=>q.type==='Daily'?{...q,done:false}:q),logs:['New day detected. Daily quests reset.',...prev.logs].slice(0,10)}))}},[]);const xpNeed=600+state.player.level*120;const xpPercent=Math.min(100,Math.round((state.player.xp/xpNeed)*100));const completedCount=state.history.length;const activeAchievements=useMemo(()=>{const earned=new Set(state.achievements);return achievementsList.map(a=>({...a,earned:earned.has(a.id)}))},[state.achievements]);function notify(text){setToast(text);setTimeout(()=>setToast(''),2200)}function unlock(){notify(window.PublicKeyCredential?'تم فتح النظام بمحاكاة Passkey / Device Unlock':'تم الفتح العادي');setState(prev=>({...prev,unlocked:true}))}function lock(){setState(prev=>({...prev,unlocked:false}))}function checkAchievements(next){const earned=new Set(next.achievements);if(next.history.length>=1)earned.add('first_quest');if(next.history.length>=10)earned.add('ten_quests');if(next.player.level>=5)earned.add('level_5');if(next.player.coins>=1000)earned.add('rich');if(next.stats.shadow>=50)earned.add('shadow_50');return{...next,achievements:[...earned]}}function completeQuest(q){setState(prev=>{let xp=prev.player.xp+Number(q.xp),level=prev.player.level,coins=prev.player.coins+Number(q.coins),points=prev.statPoints,need=600+level*120;while(xp>=need){xp-=need;level++;points+=3;need=600+level*120}const next={...prev,player:{...prev.player,xp,level,coins},statPoints:points,quests:prev.quests.map(item=>item.id===q.id?{...item,done:true}:item),history:[{date:todayKey(),quest:q.title,xp:q.xp,coins:q.coins},...prev.history].slice(0,60),logs:[`Quest cleared: ${q.title}`,...prev.logs].slice(0,10)};return checkAchievements(next)});notify(`Quest Cleared +${q.xp} XP`)}function addQuest(e){e.preventDefault();if(!questForm.title.trim())return notify('اكتب اسم المهمة');setState(prev=>({...prev,quests:[{id:Date.now(),...questForm,xp:Number(questForm.xp),coins:Number(questForm.coins),done:false},...prev.quests],logs:[`Quest added: ${questForm.title}`,...prev.logs].slice(0,10)}));setQuestForm({title:'',type:'Daily',rank:'C',xp:80,coins:25});notify('تمت إضافة المهمة')}function addSkill(e){e.preventDefault();if(!skillForm.name.trim())return notify('اكتب اسم المهارة');setState(prev=>({...prev,skills:[{id:Date.now(),...skillForm,level:Number(skillForm.level),power:Number(skillForm.power)},...prev.skills],logs:[`Skill unlocked: ${skillForm.name}`,...prev.logs].slice(0,10)}));setSkillForm({name:'',category:'Strength',level:1,power:25});notify('تمت إضافة المهارة')}function upgradeSkill(id){setState(prev=>{if(prev.player.coins<75)return prev;return{...prev,player:{...prev.player,coins:prev.player.coins-75},skills:prev.skills.map(s=>s.id===id?{...s,level:s.level+1,power:Math.min(100,s.power+10)}:s),logs:['Skill upgraded. Cost 75 coins.',...prev.logs].slice(0,10)}});notify('تم تطوير المهارة')}function increaseStat(key){if(state.statPoints<=0)return notify('لا توجد نقاط تطوير');setState(prev=>checkAchievements({...prev,statPoints:prev.statPoints-1,stats:{...prev.stats,[key]:Math.min(100,prev.stats[key]+5)},logs:[`Stat upgraded: ${key}`,...prev.logs].slice(0,10)}))}function buyItem(id){setState(prev=>{const item=prev.shop.find(i=>i.id===id);if(!item||prev.player.coins<item.cost)return prev;let next={...prev,player:{...prev.player,coins:prev.player.coins-item.cost},shop:prev.shop.map(i=>i.id===id?{...i,bought:i.bought+1}:i),logs:[`Purchased: ${item.name}`,...prev.logs].slice(0,10)};if(item.type==='Upgrade')next.stats={...next.stats,shadow:Math.min(100,next.stats.shadow+10)};return checkAchievements(next)});notify('تم الشراء')}function deleteQuest(id){setState(prev=>({...prev,quests:prev.quests.filter(q=>q.id!==id)}))}function resetAll(){localStorage.removeItem('solo-ultra-state');setState(defaultState);notify('تمت إعادة النظام')}if(!state.unlocked){return <main className="login"><div className="loginCard"><div className="mark">影</div><p className="system">HUNTER SYSTEM ACCESS</p><h1>Solo Leveling</h1><p>افتح النظام باستخدام Device Unlock / Passkey إذا كان جهازك يدعم ذلك.</p><button onClick={unlock}>Unlock with Device</button><small>نسخة محلية بدون Backend؛ البيانات محفوظة في المتصفح.</small></div></main>}return <main className="app">{toast&&<div className="toast">{toast}</div>}<header className="topbar"><div className="brand"><div className="sigil">影</div><div><p>Ultra Hunter System</p><h1>{state.player.name}</h1></div></div><nav>{[['dashboard','الرئيسية'],['quests','المهام'],['skills','المهارات'],['stats','الإحصائيات'],['shop','المتجر'],['achievements','الإنجازات'],['history','السجل']].map(([id,name])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{name}</button>)}<button className="danger" onClick={lock}>قفل</button></nav></header><section className="hero"><div><p className="system">SYSTEM MESSAGE</p><h2>Arise, Hunter.</h2><p>أنجز المهام، اجمع XP، طور مهاراتك، اشترِ المكافآت، وافتح الإنجازات.</p><div className="heroStats"><span>Level {state.player.level}</span><span>{state.player.coins} Coins</span><span>Streak {state.player.streak}</span><span>{state.statPoints} Points</span></div></div><div className="levelCard"><span>LEVEL</span><strong>{state.player.level}</strong><p>{state.player.title}</p><div className="xpRow"><b>{xpPercent}%</b><b>XP</b></div><div className="bar"><div style={{width:`${xpPercent}%`}}/></div></div></section>{tab==='dashboard'&&<Dashboard state={state} completedCount={completedCount} activeAchievements={activeAchievements}/>} {tab==='quests'&&<Quests state={state} form={questForm} setForm={setQuestForm} addQuest={addQuest} completeQuest={completeQuest} deleteQuest={deleteQuest}/>} {tab==='skills'&&<Skills state={state} form={skillForm} setForm={setSkillForm} addSkill={addSkill} upgradeSkill={upgradeSkill}/>} {tab==='stats'&&<Stats state={state} increaseStat={increaseStat}/>} {tab==='shop'&&<Shop state={state} buyItem={buyItem}/>} {tab==='achievements'&&<Achievements achievements={activeAchievements}/>} {tab==='history'&&<History state={state} resetAll={resetAll}/>}</main>}
-function Card({title,children}){return <div className="card"><h2>{title}</h2>{children}</div>}
-function Dashboard({state,completedCount,activeAchievements}){return <section className="grid dashboard"><Card title="Player Profile"><div className="profile"><div className="avatar">{state.player.avatar}</div><h3>{state.player.name}</h3><p>{state.player.title}</p><div className="miniGrid"><span>Rank: {state.player.level>=10?'S-Class':state.player.level>=5?'A-Class':'B-Class'}</span><span>Coins: {state.player.coins}</span><span>Completed: {completedCount}</span><span>Achievements: {state.achievements.length}/{activeAchievements.length}</span></div></div></Card><Card title="Next Quests"><div className="list">{state.quests.slice(0,5).map(q=><Quest q={q} key={q.id}/>)}</div></Card><Card title="Dungeon Gate"><div className="gate"><div className="portal"></div><h3>{state.quests.filter(q=>!q.done).length>3?'Red Gate':'Blue Gate'}</h3></div></Card><Card title="System Logs"><div className="logs">{state.logs.map((l,i)=><p key={i}>› {l}</p>)}</div></Card></section>}
-function Quests({state,form,setForm,addQuest,completeQuest,deleteQuest}){return <section className="grid two"><Card title="إضافة مهمة"><form className="form" onSubmit={addQuest}><input placeholder="اسم المهمة" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option>Daily</option><option>Weekly</option><option>Main</option><option>Side</option></select><select value={form.rank} onChange={e=>setForm({...form,rank:e.target.value})}><option>E</option><option>D</option><option>C</option><option>B</option><option>A</option><option>S</option></select><input type="number" value={form.xp} onChange={e=>setForm({...form,xp:e.target.value})}/><input type="number" value={form.coins} onChange={e=>setForm({...form,coins:e.target.value})}/><button>إضافة</button></form></Card><Card title="Quest Board"><div className="list">{state.quests.map(q=><Quest q={q} key={q.id} completeQuest={completeQuest} deleteQuest={deleteQuest} actions/>)}</div></Card></section>}
-function Quest({q,actions,completeQuest,deleteQuest}){return <div className={'quest '+(q.done?'done':'')}><div><h3>{q.title}</h3><p>{q.type} · Rank {q.rank} · +{q.xp} XP · +{q.coins} Coins</p></div>{actions&&<div className="row"><button disabled={q.done} onClick={()=>completeQuest(q)}>{q.done?'تم':'إنجاز'}</button><button className="danger" onClick={()=>deleteQuest(q.id)}>حذف</button></div>}</div>}
-function Skills({state,form,setForm,addSkill,upgradeSkill}){return <section className="grid two"><Card title="إضافة مهارة"><form className="form" onSubmit={addSkill}><input placeholder="اسم المهارة" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/><select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}><option>Strength</option><option>Agility</option><option>Intelligence</option><option>Endurance</option><option>Discipline</option><option>Shadow</option></select><input type="number" value={form.level} onChange={e=>setForm({...form,level:e.target.value})}/><input type="number" value={form.power} onChange={e=>setForm({...form,power:e.target.value})}/><button>Unlock Skill</button></form></Card><Card title="Skill Tree"><div className="cards">{state.skills.map(s=><div className="skill" key={s.id}><h3>{s.name}</h3><p>{s.category} · Lv.{s.level}</p><div className="bar"><div style={{width:`${s.power}%`}}/></div><button onClick={()=>upgradeSkill(s.id)}>Upgrade -75</button></div>)}</div></Card></section>}
-function Stats({state,increaseStat}){const labels={strength:'القوة',agility:'السرعة',intelligence:'الذكاء',endurance:'التحمل',discipline:'الانضباط',shadow:'قوة الظل'};return <section className="grid two"><Card title={`نقاط التطوير: ${state.statPoints}`}><div className="list">{Object.entries(state.stats).map(([k,v])=><div className="stat" key={k}><div className="xpRow"><b>{labels[k]}</b><b>{v}</b></div><div className="bar"><div style={{width:`${v}%`}}/></div><button onClick={()=>increaseStat(k)}>+ تطوير</button></div>)}</div></Card><Card title="Power Scan"><div className="rank"><h3>{Object.values(state.stats).reduce((a,b)=>a+b,0)}</h3><p>Total Power</p><div className="scan"></div></div></Card></section>}
-function Shop({state,buyItem}){return <section className="grid"><Card title="Hunter Shop"><div className="cards">{state.shop.map(i=><div className="item" key={i.id}><span>{i.type}</span><h3>{i.name}</h3><p>Cost: {i.cost} Coins · Bought: {i.bought}</p><button onClick={()=>buyItem(i.id)}>شراء</button></div>)}</div></Card></section>}
-function Achievements({achievements}){return <section className="grid"><Card title="Achievements"><div className="cards">{achievements.map(a=><div className={'achievement '+(a.earned?'earned':'')} key={a.id}><span>{a.earned?'UNLOCKED':'LOCKED'}</span><h3>{a.title}</h3><p>{a.desc}</p></div>)}</div></Card></section>}
-function History({state,resetAll}){return <section className="grid two"><Card title="Progress History"><div className="logs">{state.history.length?state.history.map((h,i)=><p key={i}>{h.date} — {h.quest} +{h.xp} XP</p>):<p className="muted">لا يوجد سجل بعد.</p>}</div></Card><Card title="System Control"><button className="danger" onClick={resetAll}>Reset Everything</button><p className="muted">يتم حفظ كل شيء داخل المتصفح Local Storage.</p></Card></section>}
+import { supabase } from './supabaseClient'
+
+const defaultQuests = [
+  { title: 'تمرين 20 دقيقة', type: 'Daily', rank: 'C', xp: 90, coins: 30, done: false },
+  { title: 'مذاكرة 45 دقيقة', type: 'Daily', rank: 'B', xp: 130, coins: 45, done: false },
+  { title: 'شرب 2 لتر ماء', type: 'Daily', rank: 'E', xp: 50, coins: 15, done: false },
+  { title: 'إنجاز أهم مهمة اليوم', type: 'Main', rank: 'A', xp: 220, coins: 80, done: false },
+]
+
+const defaultSkills = [
+  { name: 'Shadow Step', category: 'Agility', level: 1, power: 35 },
+  { name: 'Iron Will', category: 'Discipline', level: 1, power: 30 },
+  { name: 'Mana Focus', category: 'Intelligence', level: 1, power: 38 },
+]
+
+const shopItems = [
+  { id: 1, name: 'راحة 30 دقيقة', cost: 80, type: 'Reward' },
+  { id: 2, name: 'مشروب مفضل', cost: 120, type: 'Reward' },
+  { id: 3, name: 'ترقية ظل', cost: 220, type: 'Upgrade' },
+  { id: 4, name: 'يوم بدون عقوبة', cost: 350, type: 'Protection' },
+]
+
+const achievementsList = [
+  { id: 'first_quest', title: 'First Blood', desc: 'أنجز أول مهمة' },
+  { id: 'ten_quests', title: 'Quest Hunter', desc: 'أنجز 10 مهام' },
+  { id: 'level_5', title: 'Rising Hunter', desc: 'وصل Level 5' },
+  { id: 'rich', title: 'Coin Collector', desc: 'اجمع 1000 Coin' },
+  { id: 'shadow_50', title: 'Shadow Awakening', desc: 'ارفع قوة الظل إلى 50' },
+]
+
+export default function App() {
+  const [session, setSession] = useState(null)
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState('dashboard')
+  const [toast, setToast] = useState('')
+  const [profile, setProfile] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [quests, setQuests] = useState([])
+  const [skills, setSkills] = useState([])
+  const [history, setHistory] = useState([])
+  const [achievements, setAchievements] = useState([])
+  const [questForm, setQuestForm] = useState({ title: '', type: 'Daily', rank: 'C', xp: 80, coins: 25 })
+  const [skillForm, setSkillForm] = useState({ name: '', category: 'Strength', level: 1, power: 25 })
+
+  function notify(text) {
+    setToast(text)
+    setTimeout(() => setToast(''), 2300)
+  }
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setLoading(false)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession)
+      if (!currentSession) {
+        setProfile(null)
+        setStats(null)
+        setQuests([])
+        setSkills([])
+        setHistory([])
+        setAchievements([])
+      }
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (session?.user) loadCloudData(session.user)
+  }, [session])
+
+  async function signIn(e) {
+    e.preventDefault()
+    if (!email.trim()) return notify('اكتب الإيميل أولاً')
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin }
+    })
+
+    if (error) notify(error.message)
+    else notify('تم إرسال رابط الدخول إلى الإيميل')
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut()
+  }
+
+  async function loadCloudData(user) {
+    setLoading(true)
+
+    let { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+
+    if (!profileData) {
+      const { data: createdProfile } = await supabase.from('profiles').insert({
+        id: user.id,
+        name: user.email?.split('@')[0] || 'Hunter',
+        title: 'Shadow Monarch Candidate',
+        level: 1,
+        xp: 0,
+        coins: 250,
+        streak: 1,
+        stat_points: 8
+      }).select().single()
+
+      await supabase.from('stats').insert({
+        user_id: user.id,
+        strength: 20,
+        agility: 20,
+        intelligence: 20,
+        endurance: 20,
+        discipline: 20,
+        shadow: 10
+      })
+
+      await supabase.from('quests').insert(defaultQuests.map(q => ({ ...q, user_id: user.id })))
+      await supabase.from('skills').insert(defaultSkills.map(s => ({ ...s, user_id: user.id })))
+
+      profileData = createdProfile
+    }
+
+    const [
+      statsRes,
+      questsRes,
+      skillsRes,
+      historyRes,
+      achievementsRes,
+    ] = await Promise.all([
+      supabase.from('stats').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('quests').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('skills').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('progress_history').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(60),
+      supabase.from('achievements').select('*').eq('user_id', user.id),
+    ])
+
+    setProfile(profileData)
+    setStats(statsRes.data)
+    setQuests(questsRes.data || [])
+    setSkills(skillsRes.data || [])
+    setHistory(historyRes.data || [])
+    setAchievements((achievementsRes.data || []).map(a => a.achievement_key))
+    setLoading(false)
+  }
+
+  async function updateProfile(patch) {
+    const next = { ...profile, ...patch }
+    setProfile(next)
+    await supabase.from('profiles').update(patch).eq('id', profile.id)
+  }
+
+  async function checkAchievements(nextProfile = profile, nextStats = stats) {
+    const earned = new Set(achievements)
+    const completed = history.length
+
+    if (completed >= 1) earned.add('first_quest')
+    if (completed >= 10) earned.add('ten_quests')
+    if (nextProfile.level >= 5) earned.add('level_5')
+    if (nextProfile.coins >= 1000) earned.add('rich')
+    if (nextStats?.shadow >= 50) earned.add('shadow_50')
+
+    const newOnes = [...earned].filter(key => !achievements.includes(key))
+    if (newOnes.length) {
+      const rows = newOnes.map(key => ({
+        user_id: session.user.id,
+        achievement_key: key,
+        title: achievementsList.find(a => a.id === key)?.title || key
+      }))
+      await supabase.from('achievements').insert(rows)
+      setAchievements([...earned])
+      notify('Achievement Unlocked!')
+    }
+  }
+
+  async function completeQuest(q) {
+    if (q.done) return
+
+    let level = profile.level
+    let xp = profile.xp + Number(q.xp)
+    let coins = profile.coins + Number(q.coins)
+    let statPoints = profile.stat_points
+    let xpNeed = 600 + level * 120
+
+    while (xp >= xpNeed) {
+      xp -= xpNeed
+      level += 1
+      statPoints += 3
+      xpNeed = 600 + level * 120
+    }
+
+    const updatedProfile = { ...profile, level, xp, coins, stat_points: statPoints }
+
+    setQuests(prev => prev.map(item => item.id === q.id ? { ...item, done: true } : item))
+    setProfile(updatedProfile)
+
+    await Promise.all([
+      supabase.from('quests').update({ done: true }).eq('id', q.id),
+      supabase.from('profiles').update({ level, xp, coins, stat_points: statPoints }).eq('id', profile.id),
+      supabase.from('progress_history').insert({
+        user_id: session.user.id,
+        quest_title: q.title,
+        xp: q.xp,
+        coins: q.coins
+      })
+    ])
+
+    await refreshHistory()
+    await checkAchievements(updatedProfile, stats)
+    notify(`Quest Cleared +${q.xp} XP`)
+  }
+
+  async function refreshHistory() {
+    const { data } = await supabase.from('progress_history').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(60)
+    setHistory(data || [])
+  }
+
+  async function addQuest(e) {
+    e.preventDefault()
+    if (!questForm.title.trim()) return notify('اكتب اسم المهمة')
+    const row = {
+      user_id: session.user.id,
+      title: questForm.title,
+      type: questForm.type,
+      rank: questForm.rank,
+      xp: Number(questForm.xp),
+      coins: Number(questForm.coins),
+      done: false
+    }
+
+    const { data, error } = await supabase.from('quests').insert(row).select().single()
+    if (error) return notify(error.message)
+
+    setQuests(prev => [data, ...prev])
+    setQuestForm({ title: '', type: 'Daily', rank: 'C', xp: 80, coins: 25 })
+    notify('تمت إضافة المهمة وحفظها بالسحابة')
+  }
+
+  async function deleteQuest(id) {
+    await supabase.from('quests').delete().eq('id', id)
+    setQuests(prev => prev.filter(q => q.id !== id))
+  }
+
+  async function resetDaily() {
+    const dailyIds = quests.filter(q => q.type === 'Daily').map(q => q.id)
+    if (!dailyIds.length) return
+    await supabase.from('quests').update({ done: false }).in('id', dailyIds)
+    setQuests(prev => prev.map(q => q.type === 'Daily' ? { ...q, done: false } : q))
+    notify('تمت إعادة المهام اليومية')
+  }
+
+  async function addSkill(e) {
+    e.preventDefault()
+    if (!skillForm.name.trim()) return notify('اكتب اسم المهارة')
+    const row = {
+      user_id: session.user.id,
+      name: skillForm.name,
+      category: skillForm.category,
+      level: Number(skillForm.level),
+      power: Number(skillForm.power)
+    }
+
+    const { data, error } = await supabase.from('skills').insert(row).select().single()
+    if (error) return notify(error.message)
+
+    setSkills(prev => [data, ...prev])
+    setSkillForm({ name: '', category: 'Strength', level: 1, power: 25 })
+    notify('تمت إضافة المهارة وحفظها بالسحابة')
+  }
+
+  async function upgradeSkill(skill) {
+    if (profile.coins < 75) return notify('Coins غير كافية')
+    const nextSkill = {
+      level: skill.level + 1,
+      power: Math.min(100, skill.power + 10)
+    }
+    const nextProfile = { ...profile, coins: profile.coins - 75 }
+
+    setSkills(prev => prev.map(s => s.id === skill.id ? { ...s, ...nextSkill } : s))
+    setProfile(nextProfile)
+
+    await Promise.all([
+      supabase.from('skills').update(nextSkill).eq('id', skill.id),
+      supabase.from('profiles').update({ coins: nextProfile.coins }).eq('id', profile.id)
+    ])
+    notify('تم تطوير المهارة')
+  }
+
+  async function increaseStat(key) {
+    if (profile.stat_points <= 0) return notify('لا توجد نقاط تطوير')
+    const nextValue = Math.min(100, stats[key] + 5)
+    const nextStats = { ...stats, [key]: nextValue }
+    const nextProfile = { ...profile, stat_points: profile.stat_points - 1 }
+
+    setStats(nextStats)
+    setProfile(nextProfile)
+
+    await Promise.all([
+      supabase.from('stats').update({ [key]: nextValue }).eq('id', stats.id),
+      supabase.from('profiles').update({ stat_points: nextProfile.stat_points }).eq('id', profile.id)
+    ])
+    await checkAchievements(nextProfile, nextStats)
+  }
+
+  async function buyItem(item) {
+    if (profile.coins < item.cost) return notify('Coins غير كافية')
+    const nextProfile = { ...profile, coins: profile.coins - item.cost }
+    let nextStats = stats
+
+    if (item.type === 'Upgrade') {
+      nextStats = { ...stats, shadow: Math.min(100, stats.shadow + 10) }
+      setStats(nextStats)
+      await supabase.from('stats').update({ shadow: nextStats.shadow }).eq('id', stats.id)
+    }
+
+    setProfile(nextProfile)
+    await supabase.from('profiles').update({ coins: nextProfile.coins }).eq('id', profile.id)
+    await checkAchievements(nextProfile, nextStats)
+    notify('تم الشراء')
+  }
+
+  const xpNeed = profile ? 600 + profile.level * 120 : 1000
+  const xpPercent = profile ? Math.min(100, Math.round((profile.xp / xpNeed) * 100)) : 0
+  const activeAchievements = useMemo(() => achievementsList.map(a => ({ ...a, earned: achievements.includes(a.id) })), [achievements])
+
+  if (loading) return <main className="login"><div className="loginCard"><div className="loader"></div><h1>Loading System...</h1></div></main>
+
+  if (!session) {
+    return (
+      <main className="login">
+        <form className="loginCard" onSubmit={signIn}>
+          <div className="mark">影</div>
+          <p className="system">CLOUD HUNTER SYSTEM</p>
+          <h1>Solo Leveling</h1>
+          <p>سجل دخولك بالإيميل. سيتم حفظ المهام والمهارات والتقدم في Supabase.</p>
+          <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+          <button>Send Magic Link</button>
+          <small>بعد الضغط، افتح الإيميل واضغط رابط الدخول.</small>
+        </form>
+        {toast && <div className="toast">{toast}</div>}
+      </main>
+    )
+  }
+
+  return (
+    <main className="app">
+      {toast && <div className="toast">{toast}</div>}
+
+      <header className="topbar">
+        <div className="brand">
+          <div className="sigil">影</div>
+          <div>
+            <p>Cloud Hunter System</p>
+            <h1>{profile?.name}</h1>
+          </div>
+        </div>
+        <nav>
+          {[
+            ['dashboard', 'الرئيسية'],
+            ['quests', 'المهام'],
+            ['skills', 'المهارات'],
+            ['stats', 'الإحصائيات'],
+            ['shop', 'المتجر'],
+            ['achievements', 'الإنجازات'],
+            ['history', 'السجل'],
+          ].map(([id, name]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>{name}</button>)}
+          <button className="danger" onClick={signOut}>خروج</button>
+        </nav>
+      </header>
+
+      <section className="hero">
+        <div>
+          <p className="system">SYSTEM MESSAGE</p>
+          <h2>Cloud Sync Activated.</h2>
+          <p>بياناتك الآن مربوطة بالحساب والسحابة، وليست محفوظة في المتصفح فقط.</p>
+          <div className="heroStats">
+            <span>Level {profile.level}</span>
+            <span>{profile.coins} Coins</span>
+            <span>{profile.stat_points} Points</span>
+            <span>{history.length} Cleared</span>
+          </div>
+          <div className="actions"><button onClick={resetDaily}>إعادة المهام اليومية</button></div>
+        </div>
+        <div className="levelCard">
+          <span>LEVEL</span>
+          <strong>{profile.level}</strong>
+          <p>{profile.title}</p>
+          <div className="xpRow"><b>{xpPercent}%</b><b>XP</b></div>
+          <div className="bar"><div style={{width: `${xpPercent}%`}} /></div>
+        </div>
+      </section>
+
+      {tab === 'dashboard' && <Dashboard profile={profile} stats={stats} quests={quests} history={history} achievements={activeAchievements} />}
+      {tab === 'quests' && <Quests quests={quests} form={questForm} setForm={setQuestForm} addQuest={addQuest} completeQuest={completeQuest} deleteQuest={deleteQuest} />}
+      {tab === 'skills' && <Skills skills={skills} form={skillForm} setForm={setSkillForm} addSkill={addSkill} upgradeSkill={upgradeSkill} />}
+      {tab === 'stats' && <Stats stats={stats} points={profile.stat_points} increaseStat={increaseStat} />}
+      {tab === 'shop' && <Shop items={shopItems} coins={profile.coins} buyItem={buyItem} />}
+      {tab === 'achievements' && <Achievements achievements={activeAchievements} />}
+      {tab === 'history' && <History history={history} />}
+    </main>
+  )
+}
+
+function Card({ title, children }) {
+  return <div className="card"><h2>{title}</h2>{children}</div>
+}
+
+function Dashboard({ profile, stats, quests, history, achievements }) {
+  return (
+    <section className="grid dashboard">
+      <Card title="Player Profile">
+        <div className="profile">
+          <div className="avatar">影</div>
+          <h3>{profile.name}</h3>
+          <p>{profile.title}</p>
+          <div className="miniGrid">
+            <span>Coins: {profile.coins}</span>
+            <span>Level: {profile.level}</span>
+            <span>Completed: {history.length}</span>
+            <span>Achievements: {achievements.filter(a => a.earned).length}/{achievements.length}</span>
+          </div>
+        </div>
+      </Card>
+      <Card title="Quest Board">
+        <div className="list">{quests.slice(0, 5).map(q => <Quest q={q} key={q.id} />)}</div>
+      </Card>
+      <Card title="Dungeon Gate">
+        <div className="gate"><div className="portal"></div><h3>{quests.filter(q => !q.done).length > 3 ? 'Red Gate' : 'Blue Gate'}</h3></div>
+      </Card>
+      <Card title="Power Scan">
+        <div className="rank"><h3>{stats ? Object.entries(stats).filter(([k]) => !['id','user_id','created_at'].includes(k)).reduce((a, [,b]) => a + Number(b), 0) : 0}</h3><p>Total Power</p><div className="scan"></div></div>
+      </Card>
+    </section>
+  )
+}
+
+function Quests({ quests, form, setForm, addQuest, completeQuest, deleteQuest }) {
+  return (
+    <section className="grid two">
+      <Card title="إضافة مهمة">
+        <form className="form" onSubmit={addQuest}>
+          <input placeholder="اسم المهمة" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
+          <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}><option>Daily</option><option>Weekly</option><option>Main</option><option>Side</option></select>
+          <select value={form.rank} onChange={e => setForm({...form, rank: e.target.value})}><option>E</option><option>D</option><option>C</option><option>B</option><option>A</option><option>S</option></select>
+          <input type="number" value={form.xp} onChange={e => setForm({...form, xp: e.target.value})} />
+          <input type="number" value={form.coins} onChange={e => setForm({...form, coins: e.target.value})} />
+          <button>إضافة وحفظ</button>
+        </form>
+      </Card>
+      <Card title="كل المهام">
+        <div className="list">{quests.map(q => <Quest q={q} key={q.id} actions completeQuest={completeQuest} deleteQuest={deleteQuest} />)}</div>
+      </Card>
+    </section>
+  )
+}
+
+function Quest({ q, actions, completeQuest, deleteQuest }) {
+  return (
+    <div className={'quest ' + (q.done ? 'done' : '')}>
+      <div><h3>{q.title}</h3><p>{q.type} · Rank {q.rank} · +{q.xp} XP · +{q.coins} Coins</p></div>
+      {actions && <div className="row"><button disabled={q.done} onClick={() => completeQuest(q)}>{q.done ? 'تم' : 'إنجاز'}</button><button className="danger" onClick={() => deleteQuest(q.id)}>حذف</button></div>}
+    </div>
+  )
+}
+
+function Skills({ skills, form, setForm, addSkill, upgradeSkill }) {
+  return (
+    <section className="grid two">
+      <Card title="إضافة مهارة">
+        <form className="form" onSubmit={addSkill}>
+          <input placeholder="اسم المهارة" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+          <select value={form.category} onChange={e => setForm({...form, category: e.target.value})}><option>Strength</option><option>Agility</option><option>Intelligence</option><option>Endurance</option><option>Discipline</option><option>Shadow</option></select>
+          <input type="number" value={form.level} onChange={e => setForm({...form, level: e.target.value})} />
+          <input type="number" value={form.power} onChange={e => setForm({...form, power: e.target.value})} />
+          <button>Unlock Skill</button>
+        </form>
+      </Card>
+      <Card title="Skill Tree">
+        <div className="cards">{skills.map(s => <div className="skill" key={s.id}><h3>{s.name}</h3><p>{s.category} · Lv.{s.level}</p><div className="bar"><div style={{width:`${s.power}%`}} /></div><button onClick={() => upgradeSkill(s)}>Upgrade -75</button></div>)}</div>
+      </Card>
+    </section>
+  )
+}
+
+function Stats({ stats, points, increaseStat }) {
+  if (!stats) return null
+  const labels = {strength:'القوة', agility:'السرعة', intelligence:'الذكاء', endurance:'التحمل', discipline:'الانضباط', shadow:'قوة الظل'}
+  return (
+    <section className="grid">
+      <Card title={`نقاط التطوير: ${points}`}>
+        <div className="list">{Object.entries(labels).map(([k, label]) => <div className="stat" key={k}><div className="xpRow"><b>{label}</b><b>{stats[k]}</b></div><div className="bar"><div style={{width:`${stats[k]}%`}} /></div><button onClick={() => increaseStat(k)}>+ تطوير</button></div>)}</div>
+      </Card>
+    </section>
+  )
+}
+
+function Shop({ items, coins, buyItem }) {
+  return <section className="grid"><Card title={`Hunter Shop — Coins: ${coins}`}><div className="cards">{items.map(i => <div className="item" key={i.id}><span>{i.type}</span><h3>{i.name}</h3><p>Cost: {i.cost} Coins</p><button onClick={() => buyItem(i)}>شراء</button></div>)}</div></Card></section>
+}
+
+function Achievements({ achievements }) {
+  return <section className="grid"><Card title="Achievements"><div className="cards">{achievements.map(a => <div className={'achievement ' + (a.earned ? 'earned' : '')} key={a.id}><span>{a.earned ? 'UNLOCKED' : 'LOCKED'}</span><h3>{a.title}</h3><p>{a.desc}</p></div>)}</div></Card></section>
+}
+
+function History({ history }) {
+  return <section className="grid"><Card title="Progress History"><div className="logs">{history.map(h => <p key={h.id}>{new Date(h.created_at).toLocaleDateString()} — {h.quest_title} +{h.xp} XP +{h.coins} Coins</p>)}</div></Card></section>
+}
