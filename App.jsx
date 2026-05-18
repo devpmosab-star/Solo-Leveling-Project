@@ -42,6 +42,17 @@ export default function App() {
   const [xpPopup, setXpPopup] = useState(null)
   const [activeDungeon, setActiveDungeon] = useState(null)
   const [dungeonLog, setDungeonLog] = useState([])
+  const [playerHp, setPlayerHp] = useState(1000)
+  const [mana, setMana] = useState(300)
+  const [inventory, setInventory] = useState([
+    { id: 1, name: 'Shadow Dagger', rarity: 'Epic', type: 'Weapon' },
+    { id: 2, name: 'Mana Potion', rarity: 'Rare', type: 'Potion' },
+    { id: 3, name: 'Knight Armor', rarity: 'Legendary', type: 'Armor' },
+  ])
+  const [shadowArmy, setShadowArmy] = useState([
+    { id: 1, name: 'Igris', rank: 'Commander', level: 18, power: 920 },
+    { id: 2, name: 'Iron', rank: 'Elite', level: 11, power: 540 },
+  ])
   const [profile, setProfile] = useState(null)
   const [stats, setStats] = useState(null)
   const [quests, setQuests] = useState([])
@@ -355,6 +366,32 @@ export default function App() {
     return 'rank-c'
   }
 
+
+  function useSkill(skill) {
+    if (!activeDungeon) return
+    const skills = {
+      'Shadow Slash': { damage: 180, mana: 40 },
+      'Monarch Authority': { damage: 260, mana: 70 },
+      'Dagger Rush': { damage: 130, mana: 30 },
+    }
+
+    const current = skills[skill]
+    if (mana < current.mana) {
+      notify('Not enough mana')
+      return
+    }
+
+    setMana(prev => prev - current.mana)
+
+    const nextHp = Math.max(0, activeDungeon.currentHp - current.damage)
+    setActiveDungeon(prev => ({ ...prev, currentHp: nextHp }))
+    setDungeonLog(prev => [`${skill} dealt ${current.damage} damage`, ...prev].slice(0, 8))
+
+    if (nextHp <= 0) {
+      claimDungeonReward(activeDungeon)
+    }
+  }
+
   function spawnDungeon() {
     const gates = [
       { name: 'Azure Dungeon Gate', rank: 'C', boss: 'Stone Golem', hp: 420, rewardXp: 180, rewardCoins: 70, danger: 'Moderate' },
@@ -564,7 +601,9 @@ export default function App() {
       {tab === 'quests' && <Quests quests={quests} form={questForm} setForm={setQuestForm} addQuest={addQuest} completeQuest={completeQuest} deleteQuest={deleteQuest} />}
       {tab === 'skills' && <Skills skills={skills} form={skillForm} setForm={setSkillForm} addSkill={addSkill} upgradeSkill={upgradeSkill} />}
       {tab === 'stats' && <Stats stats={stats} points={profile.stat_points} increaseStat={increaseStat} />}
-      {tab === 'dungeon' && <Dungeon activeDungeon={activeDungeon} spawnDungeon={spawnDungeon} attackDungeon={attackDungeon} dungeonLog={dungeonLog} />}
+      {tab === 'dungeon' && <Dungeon activeDungeon={activeDungeon} spawnDungeon={spawnDungeon} attackDungeon={attackDungeon} dungeonLog={dungeonLog} useSkill={useSkill} playerHp={playerHp} mana={mana} />}
+      {tab === 'army' && <ShadowArmy shadows={shadowArmy} />}
+      {tab === 'inventory' && <Inventory inventory={inventory} />}
       {tab === 'shop' && <Shop items={shopItems} coins={profile.coins} buyItem={buyItem} />}
       {tab === 'achievements' && <Achievements achievements={activeAchievements} />}
       {tab === 'history' && <History history={history} />}
@@ -674,7 +713,7 @@ function Achievements({ achievements }) {
 }
 
 
-function Dungeon({ activeDungeon, spawnDungeon, attackDungeon, dungeonLog }) {
+function Dungeon({ activeDungeon, spawnDungeon, attackDungeon, dungeonLog, useSkill, playerHp, mana }) {
   const hpPercent = activeDungeon ? Math.max(0, Math.round((activeDungeon.currentHp / activeDungeon.hp) * 100)) : 0
 
   return (
@@ -696,7 +735,15 @@ function Dungeon({ activeDungeon, spawnDungeon, attackDungeon, dungeonLog }) {
               <div className="xpRow"><b>Boss HP</b><b>{activeDungeon.currentHp}/{activeDungeon.hp}</b></div>
               <div className="bar danger-bar"><div style={{ width: `${hpPercent}%` }} /></div>
             </div>
-            <button onClick={attackDungeon}>Attack Boss</button>
+            <div className="combat-actions">
+              <button onClick={attackDungeon}>Basic Attack</button>
+              <button onClick={() => useSkill('Shadow Slash')}>Shadow Slash</button>
+              <button onClick={() => useSkill('Monarch Authority')}>Monarch Authority</button>
+            </div>
+            <div className="combat-stats">
+              <span>HP {playerHp}</span>
+              <span>Mana {mana}</span>
+            </div>
           </div>
         )}
       </Card>
@@ -709,6 +756,45 @@ function Dungeon({ activeDungeon, spawnDungeon, attackDungeon, dungeonLog }) {
         </div>
         <div className="logs dungeon-logs">
           {dungeonLog.length ? dungeonLog.map((l, i) => <p key={i}>› {l}</p>) : <p>› Waiting for gate detection...</p>}
+        </div>
+      </Card>
+    </section>
+  )
+}
+
+
+function ShadowArmy({ shadows }) {
+  return (
+    <section className="grid">
+      <Card title="Shadow Monarch Army">
+        <div className="cards">
+          {shadows.map(shadow => (
+            <div className="shadow-card" key={shadow.id}>
+              <span>{shadow.rank}</span>
+              <h3>{shadow.name}</h3>
+              <p>Level {shadow.level}</p>
+              <div className="bar"><div style={{ width: `${Math.min(100, shadow.power / 10)}%` }} /></div>
+              <b>{shadow.power} Power</b>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </section>
+  )
+}
+
+function Inventory({ inventory }) {
+  return (
+    <section className="grid">
+      <Card title="Hunter Inventory">
+        <div className="cards">
+          {inventory.map(item => (
+            <div className={"inventory-item rarity-" + item.rarity.toLowerCase()} key={item.id}>
+              <span>{item.rarity}</span>
+              <h3>{item.name}</h3>
+              <p>{item.type}</p>
+            </div>
+          ))}
         </div>
       </Card>
     </section>

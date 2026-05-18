@@ -178,3 +178,85 @@ button{letter-spacing:.2px}
 .dungeon-logs{
   margin-top:14px;
 }
+
+/* SHADOW ARMY + INVENTORY + COMBAT */
+.shadow-card{
+  padding:20px;
+  border-radius:24px;
+  background:
+    radial-gradient(circle at top,rgba(157,107,255,.18),transparent 40%),
+    rgba(255,255,255,.05);
+  border:1px solid rgba(157,107,255,.24);
+  text-align:center;
+}
+.shadow-card span{
+  color:#38e8ff;
+  letter-spacing:3px;
+  font-size:10px;
+  font-weight:900;
+}
+.shadow-card h3{
+  font-size:28px;
+  margin:8px 0;
+  background:linear-gradient(180deg,#fff,#d7f8ff);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+.shadow-card p{color:#cfd8ff}
+.shadow-card b{
+  display:block;
+  margin-top:12px;
+  color:#ffd36e;
+}
+
+.inventory-item{
+  padding:22px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.04);
+  position:relative;
+  overflow:hidden;
+}
+.inventory-item span{
+  letter-spacing:3px;
+  font-size:10px;
+  font-weight:900;
+}
+.inventory-item h3{
+  margin:10px 0 4px;
+}
+.rarity-legendary{
+  border-color:rgba(255,211,110,.45);
+  box-shadow:0 0 40px rgba(255,211,110,.12);
+}
+.rarity-epic{
+  border-color:rgba(157,107,255,.42);
+  box-shadow:0 0 40px rgba(157,107,255,.12);
+}
+.rarity-rare{
+  border-color:rgba(56,232,255,.42);
+  box-shadow:0 0 40px rgba(56,232,255,.12);
+}
+
+.combat-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin-top:16px;
+}
+.combat-stats{
+  display:flex;
+  justify-content:center;
+  gap:14px;
+  margin-top:16px;
+  flex-wrap:wrap;
+}
+.combat-stats span{
+  padding:10px 14px;
+  border-radius:12px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  color:#fff;
+  font-weight:800;
+}
