@@ -1,0 +1,8 @@
+{
+  "name": "Solo Leveling Hunter System",
+  "short_name": "Hunter",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05030d",
+  "theme_color": "#05030d"
+}
