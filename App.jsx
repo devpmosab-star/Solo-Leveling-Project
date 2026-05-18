@@ -374,7 +374,7 @@ export default function App() {
         <div className="brand">
           <div className="sigil">影</div>
           <div>
-            <p>Cloud Hunter System</p>
+            <p>Shadow Hunter Archive</p>
             <h1>{profile?.name}</h1>
           </div>
         </div>
@@ -395,8 +395,8 @@ export default function App() {
       <section className="hero">
         <div>
           <p className="system">SYSTEM MESSAGE</p>
-          <h2>Cloud Sync Activated.</h2>
-          <p>بياناتك الآن مربوطة بالحساب والسحابة، وليست محفوظة في المتصفح فقط.</p>
+          <h2>System Awakening Complete.</h2>
+          <p>تم ربط حسابك بالنظام السحابي. كل مهمة، مهارة، وإنجاز يتم حفظه داخل Hunter Archive.</p>
           <div className="heroStats">
             <span>Level {profile.level}</span>
             <span>{profile.coins} Coins</span>
@@ -411,6 +411,16 @@ export default function App() {
           <p>{profile.title}</p>
           <div className="xpRow"><b>{xpPercent}%</b><b>XP</b></div>
           <div className="bar"><div style={{width: `${xpPercent}%`}} /></div>
+        </div>
+      </section>
+
+      <section className="system-banner">
+        <div>
+          <span className="banner-kicker">SYSTEM DIRECTIVE</span>
+          <h3>Complete the day. Increase your rank. Do not break the streak.</h3>
+        </div>
+        <div className="banner-runes">
+          <span>XP</span><span>RANK</span><span>GATE</span><span>SHADOW</span>
         </div>
       </section>
 
@@ -432,7 +442,7 @@ function Card({ title, children }) {
 function Dashboard({ profile, stats, quests, history, achievements }) {
   return (
     <section className="grid dashboard">
-      <Card title="Player Profile">
+      <Card title="Hunter Identity">
         <div className="profile">
           <div className="avatar">影</div>
           <h3>{profile.name}</h3>
@@ -445,13 +455,13 @@ function Dashboard({ profile, stats, quests, history, achievements }) {
           </div>
         </div>
       </Card>
-      <Card title="Quest Board">
+      <Card title="Dungeon Quest Board">
         <div className="list">{quests.slice(0, 5).map(q => <Quest q={q} key={q.id} />)}</div>
       </Card>
       <Card title="Dungeon Gate">
-        <div className="gate"><div className="portal"></div><h3>{quests.filter(q => !q.done).length > 3 ? 'Red Gate' : 'Blue Gate'}</h3></div>
+        <div className="gate"><div className="portal"></div><h3>{quests.filter(q => !q.done).length > 3 ? 'Crimson Dungeon Gate' : 'Azure Dungeon Gate'}</h3></div>
       </Card>
-      <Card title="Power Scan">
+      <Card title="Mana Power Scan">
         <div className="rank"><h3>{stats ? Object.entries(stats).filter(([k]) => !['id','user_id','created_at'].includes(k)).reduce((a, [,b]) => a + Number(b), 0) : 0}</h3><p>Total Power</p><div className="scan"></div></div>
       </Card>
     </section>
@@ -461,7 +471,7 @@ function Dashboard({ profile, stats, quests, history, achievements }) {
 function Quests({ quests, form, setForm, addQuest, completeQuest, deleteQuest }) {
   return (
     <section className="grid two">
-      <Card title="إضافة مهمة">
+      <Card title="Create New Quest">
         <form className="form" onSubmit={addQuest}>
           <input placeholder="اسم المهمة" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
           <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}><option>Daily</option><option>Weekly</option><option>Main</option><option>Side</option></select>
@@ -471,7 +481,7 @@ function Quests({ quests, form, setForm, addQuest, completeQuest, deleteQuest })
           <button>إضافة وحفظ</button>
         </form>
       </Card>
-      <Card title="كل المهام">
+      <Card title="All Active Quests">
         <div className="list">{quests.map(q => <Quest q={q} key={q.id} actions completeQuest={completeQuest} deleteQuest={deleteQuest} />)}</div>
       </Card>
     </section>
@@ -490,7 +500,7 @@ function Quest({ q, actions, completeQuest, deleteQuest }) {
 function Skills({ skills, form, setForm, addSkill, upgradeSkill }) {
   return (
     <section className="grid two">
-      <Card title="إضافة مهارة">
+      <Card title="Unlock New Skill">
         <form className="form" onSubmit={addSkill}>
           <input placeholder="اسم المهارة" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
           <select value={form.category} onChange={e => setForm({...form, category: e.target.value})}><option>Strength</option><option>Agility</option><option>Intelligence</option><option>Endurance</option><option>Discipline</option><option>Shadow</option></select>
@@ -499,7 +509,7 @@ function Skills({ skills, form, setForm, addSkill, upgradeSkill }) {
           <button>Unlock Skill</button>
         </form>
       </Card>
-      <Card title="Skill Tree">
+      <Card title="Shadow Skill Tree">
         <div className="cards">{skills.map(s => <div className="skill" key={s.id}><h3>{s.name}</h3><p>{s.category} · Lv.{s.level}</p><div className="bar"><div style={{width:`${s.power}%`}} /></div><button onClick={() => upgradeSkill(s)}>Upgrade -75</button></div>)}</div>
       </Card>
     </section>
@@ -519,7 +529,7 @@ function Stats({ stats, points, increaseStat }) {
 }
 
 function Shop({ items, coins, buyItem }) {
-  return <section className="grid"><Card title={`Hunter Shop — Coins: ${coins}`}><div className="cards">{items.map(i => <div className="item" key={i.id}><span>{i.type}</span><h3>{i.name}</h3><p>Cost: {i.cost} Coins</p><button onClick={() => buyItem(i)}>شراء</button></div>)}</div></Card></section>
+  return <section className="grid"><Card title={`Shadow Market — Coins: ${coins}`}><div className="cards">{items.map(i => <div className="item" key={i.id}><span>{i.type}</span><h3>{i.name}</h3><p>Cost: {i.cost} Coins</p><button onClick={() => buyItem(i)}>شراء</button></div>)}</div></Card></section>
 }
 
 function Achievements({ achievements }) {
@@ -527,5 +537,5 @@ function Achievements({ achievements }) {
 }
 
 function History({ history }) {
-  return <section className="grid"><Card title="Progress History"><div className="logs">{history.map(h => <p key={h.id}>{new Date(h.created_at).toLocaleDateString()} — {h.quest_title} +{h.xp} XP +{h.coins} Coins</p>)}</div></Card></section>
+  return <section className="grid"><Card title="Hunter Archive Log"><div className="logs">{history.map(h => <p key={h.id}>{new Date(h.created_at).toLocaleDateString()} — {h.quest_title} +{h.xp} XP +{h.coins} Coins</p>)}</div></Card></section>
 }
