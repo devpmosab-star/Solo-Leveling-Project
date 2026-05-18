@@ -37,6 +37,8 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('dashboard')
   const [toast, setToast] = useState('')
+  const [booting, setBooting] = useState(true)
+  const [levelFlash, setLevelFlash] = useState(false)
   const [profile, setProfile] = useState(null)
   const [stats, setStats] = useState(null)
   const [quests, setQuests] = useState([])
@@ -50,6 +52,11 @@ export default function App() {
     setToast(text)
     setTimeout(() => setToast(''), 2300)
   }
+
+  useEffect(() => {
+    const t = setTimeout(() => setBooting(false), 3200)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -189,6 +196,8 @@ export default function App() {
     let xpNeed = 600 + level * 120
 
     while (xp >= xpNeed) {
+      setLevelFlash(true)
+      setTimeout(() => setLevelFlash(false), 2400)
       xp -= xpNeed
       level += 1
       statPoints += 3
@@ -329,6 +338,21 @@ export default function App() {
   const xpPercent = profile ? Math.min(100, Math.round((profile.xp / xpNeed) * 100)) : 0
   const activeAchievements = useMemo(() => achievementsList.map(a => ({ ...a, earned: achievements.includes(a.id) })), [achievements])
 
+  if (booting) {
+    return (
+      <main className="boot">
+        <div className="boot-overlay"></div>
+        <div className="boot-center">
+          <div className="boot-ring"></div>
+          <div className="boot-symbol">影</div>
+          <p className="boot-system">SYSTEM INITIALIZING</p>
+          <h1>Shadow Monarch Protocol</h1>
+          <div className="boot-bar"><div></div></div>
+        </div>
+      </main>
+    )
+  }
+
   if (loading) return <main className="login"><div className="loginCard"><div className="loader"></div><h1>Loading System...</h1></div></main>
 
   if (!session) {
@@ -367,7 +391,21 @@ export default function App() {
   }
 
   return (
-    <main className="app">
+    <main className={"app " + (
+      profile?.level >= 15 ? 'rank-s' :
+      profile?.level >= 10 ? 'rank-a' :
+      profile?.level >= 5 ? 'rank-b' : 'rank-c'
+    )}>
+      {levelFlash && (
+        <div className="level-overlay">
+          <div className="level-core"></div>
+          <div className="level-content">
+            <span>LEVEL UP</span>
+            <h1>{profile.level}</h1>
+            <p>Hunter power has evolved.</p>
+          </div>
+        </div>
+      )}
       {toast && <div className="toast">{toast}</div>}
 
       <header className="topbar">
