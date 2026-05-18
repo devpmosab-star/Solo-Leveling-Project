@@ -345,6 +345,20 @@ export default function App() {
     )
   }
 
+  if (!profile || !stats) {
+    return (
+      <main className="login">
+        <div className="loginCard">
+          <div className="loader"></div>
+          <h1>Loading Hunter Data...</h1>
+          <p>جاري تحميل بياناتك من Supabase.</p>
+          <button className="danger" onClick={signOut}>تسجيل خروج</button>
+        </div>
+        {toast && <div className="toast">{toast}</div>}
+      </main>
+    )
+  }
+
   return (
     <main className="app">
       {toast && <div className="toast">{toast}</div>}
