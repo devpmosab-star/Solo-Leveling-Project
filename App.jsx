@@ -53,6 +53,13 @@ export default function App() {
     { id: 1, name: 'Igris', rank: 'Commander', level: 18, power: 920 },
     { id: 2, name: 'Iron', rank: 'Elite', level: 11, power: 540 },
   ])
+  const [systemMessages, setSystemMessages] = useState([
+    'System online. Hunter profile synchronized.',
+    'Daily activity scan completed.',
+    'Shadow energy level is stable.'
+  ])
+  const [dailyEvent, setDailyEvent] = useState(null)
+  const [combo, setCombo] = useState(0)
   const [profile, setProfile] = useState(null)
   const [stats, setStats] = useState(null)
   const [quests, setQuests] = useState([])
@@ -236,6 +243,10 @@ export default function App() {
 
     await refreshHistory()
     await checkAchievements(updatedProfile, stats)
+    setCombo(prev => prev + 1)
+    setXpPopup({ xp: q.xp, coins: q.coins, label: combo >= 2 ? 'COMBO QUEST CLEAR' : 'QUEST CLEARED' })
+    setTimeout(() => setXpPopup(null), 2200)
+    systemSpeak(`Quest cleared. ${q.xp} experience gained.`)
     notify(`Quest Cleared +${q.xp} XP`)
   }
 
@@ -349,6 +360,69 @@ export default function App() {
   }
 
 
+
+  function systemSpeak(text) {
+    setSystemMessages(prev => [text, ...prev].slice(0, 8))
+    try {
+      const audio = new AudioContext()
+      const oscillator = audio.createOscillator()
+      const gain = audio.createGain()
+      oscillator.type = 'sine'
+      oscillator.frequency.value = 520
+      gain.gain.value = 0.035
+      oscillator.connect(gain)
+      gain.connect(audio.destination)
+      oscillator.start()
+      oscillator.stop(audio.currentTime + 0.08)
+    } catch {}
+  }
+
+  function generateSystemEvent() {
+    const events = [
+      {
+        title: 'Emergency Gate Alert',
+        rank: 'A',
+        desc: 'A high-risk gate appeared. Clear one dungeon today for bonus rewards.',
+        bonus: '+20% Dungeon XP'
+      },
+      {
+        title: 'Discipline Trial',
+        rank: 'B',
+        desc: 'Complete three quests without deleting any quest to maintain hunter discipline.',
+        bonus: '+1 Stat Point'
+      },
+      {
+        title: 'Shadow Resonance',
+        rank: 'S',
+        desc: 'Shadow energy is unstable. Upgrade one skill or clear a boss.',
+        bonus: '+Shadow Aura'
+      },
+      {
+        title: 'Recovery Window',
+        rank: 'C',
+        desc: 'Complete one recovery task. Low stamina hunters receive reduced penalties.',
+        bonus: '+50 Coins'
+      },
+    ]
+    const event = events[Math.floor(Math.random() * events.length)]
+    setDailyEvent(event)
+    systemSpeak(`Daily event generated: ${event.title}`)
+  }
+
+  function addGeneratedQuest() {
+    const ideas = [
+      { title: 'Complete a focused 60-minute training block', type: 'Daily', rank: 'B', xp: 150, coins: 45 },
+      { title: 'Clear one difficult personal task', type: 'Main', rank: 'A', xp: 240, coins: 90 },
+      { title: 'Review your progress and plan tomorrow', type: 'Daily', rank: 'C', xp: 90, coins: 30 },
+      { title: 'Do a no-distraction sprint for 30 minutes', type: 'Side', rank: 'B', xp: 130, coins: 40 },
+    ]
+    const q = ideas[Math.floor(Math.random() * ideas.length)]
+    setQuestForm(q)
+    systemSpeak('AI generated a new quest suggestion.')
+    setTab('quests')
+  }
+
+
   function getRank(level) {
     if (level >= 30) return 'National Level Hunter'
     if (level >= 22) return 'S-Rank'
@@ -459,6 +533,7 @@ export default function App() {
 
     await refreshHistory()
     await checkAchievements(updatedProfile, stats)
+    systemSpeak('Dungeon cleared. Reward has been archived.')
     notify('Dungeon Cleared')
   }
 
@@ -604,6 +679,7 @@ export default function App() {
       {tab === 'dungeon' && <Dungeon activeDungeon={activeDungeon} spawnDungeon={spawnDungeon} attackDungeon={attackDungeon} dungeonLog={dungeonLog} useSkill={useSkill} playerHp={playerHp} mana={mana} />}
       {tab === 'army' && <ShadowArmy shadows={shadowArmy} />}
       {tab === 'inventory' && <Inventory inventory={inventory} />}
+      {tab === 'systemai' && <SystemAI messages={systemMessages} dailyEvent={dailyEvent} generateSystemEvent={generateSystemEvent} addGeneratedQuest={addGeneratedQuest} combo={combo} />}
       {tab === 'shop' && <Shop items={shopItems} coins={profile.coins} buyItem={buyItem} />}
       {tab === 'achievements' && <Achievements achievements={activeAchievements} />}
       {tab === 'history' && <History history={history} />}
@@ -762,6 +838,52 @@ function Dungeon({ activeDungeon, spawnDungeon, attackDungeon, dungeonLog, useSk
   )
 }
 
+
+
+function SystemAI({ messages, dailyEvent, generateSystemEvent, addGeneratedQuest, combo }) {
+  return (
+    <section className="grid two">
+      <Card title="System AI Core">
+        <div className="ai-core">
+          <div className="ai-orb">
+            <span>AI</span>
+          </div>
+          <h3>Architect Protocol</h3>
+          <p>The system can generate events, recommend quests, and track hunter behavior.</p>
+          <div className="combat-actions">
+            <button onClick={generateSystemEvent}>Generate Daily Event</button>
+            <button onClick={addGeneratedQuest}>Suggest Quest</button>
+          </div>
+          <div className="combat-stats">
+            <span>Combo {combo}</span>
+            <span>Status Online</span>
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Daily Event + System Messages">
+        {dailyEvent ? (
+          <div className="event-card">
+            <span>Rank {dailyEvent.rank}</span>
+            <h3>{dailyEvent.title}</h3>
+            <p>{dailyEvent.desc}</p>
+            <b>{dailyEvent.bonus}</b>
+          </div>
+        ) : (
+          <div className="event-card muted-event">
+            <span>NO EVENT</span>
+            <h3>No daily event generated</h3>
+            <p>Press Generate Daily Event to create a system challenge.</p>
+          </div>
+        )}
+
+        <div className="logs ai-logs">
+          {messages.map((m, i) => <p key={i}>› {m}</p>)}
+        </div>
+      </Card>
+    </section>
+  )
+}
 
 function ShadowArmy({ shadows }) {
   return (
