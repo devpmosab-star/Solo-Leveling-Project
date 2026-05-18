@@ -32,6 +32,8 @@ const achievementsList = [
 export default function App() {
   const [session, setSession] = useState(null)
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authMode, setAuthMode] = useState('login')
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('dashboard')
   const [toast, setToast] = useState('')
@@ -76,15 +78,16 @@ export default function App() {
 
   async function signIn(e) {
     e.preventDefault()
-    if (!email.trim()) return notify('اكتب الإيميل أولاً')
+    if (!email.trim() || !password.trim()) return notify('اكتب الإيميل وكلمة المرور')
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin }
-    })
+    const action = authMode === 'signup'
+      ? supabase.auth.signUp({ email, password })
+      : supabase.auth.signInWithPassword({ email, password })
+
+    const { error } = await action
 
     if (error) notify(error.message)
-    else notify('تم إرسال رابط الدخول إلى الإيميل')
+    else notify(authMode === 'signup' ? 'تم إنشاء الحساب. إذا طلب تأكيد، افتح الإيميل.' : 'تم تسجيل الدخول')
   }
 
   async function signOut() {
@@ -335,10 +338,14 @@ export default function App() {
           <div className="mark">影</div>
           <p className="system">CLOUD HUNTER SYSTEM</p>
           <h1>Solo Leveling</h1>
-          <p>سجل دخولك بالإيميل. سيتم حفظ المهام والمهارات والتقدم في Supabase.</p>
+          <p>{authMode === 'signup' ? 'أنشئ حساب جديد واحفظ تقدمك في Supabase.' : 'سجل دخولك بالإيميل وكلمة المرور من أي جهاز.'}</p>
           <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-          <button>Send Magic Link</button>
-          <small>بعد الضغط، افتح الإيميل واضغط رابط الدخول.</small>
+          <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+          <button>{authMode === 'signup' ? 'Create Account' : 'Login'}</button>
+          <button type="button" className="ghost full" onClick={() => setAuthMode(authMode === 'signup' ? 'login' : 'signup')}>
+            {authMode === 'signup' ? 'عندي حساب بالفعل' : 'إنشاء حساب جديد'}
+          </button>
+          <small>بعد إنشاء الحساب، استخدم نفس الإيميل وكلمة المرور للدخول من أي جهاز.</small>
         </form>
         {toast && <div className="toast">{toast}</div>}
       </main>

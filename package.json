@@ -1,7 +1,7 @@
 {
-  "name": "solo-leveling-cloud-hunter-system",
+  "name": "solo-leveling-password-hunter-system",
   "private": true,
-  "version": "4.0.0",
+  "version": "4.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
