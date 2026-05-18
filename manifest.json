@@ -1,0 +1,8 @@
+{
+  "name": "Solo Leveling Cloud Hunter System",
+  "short_name": "Hunter",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#03020a",
+  "theme_color": "#03020a"
+}
