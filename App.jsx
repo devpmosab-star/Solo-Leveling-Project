@@ -2,53 +2,53 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 
 const careerTracks = [
-  { key: 'plc', name: 'PLC / Automation', progress: 8, next: 'Inputs & Outputs basics' },
-  { key: 'scada', name: 'SCADA / HMI', progress: 3, next: 'SCADA dashboard demo' },
-  { key: 'bms', name: 'BMS / Building Automation', progress: 5, next: 'BMS system overview' },
+  { key: 'plc', name: 'PLC / الأتمتة', progress: 8, next: 'أساسيات المدخلات والمخرجات' },
+  { key: 'scada', name: 'SCADA / واجهات المراقبة', progress: 3, next: 'تجربة شاشة SCADA' },
+  { key: 'bms', name: 'BMS / أتمتة المباني', progress: 5, next: 'نظرة عامة على نظام BMS' },
 ]
 
 const foundationMissions = [
-  { title: 'PLC Inputs & Outputs Basics', reason: 'First practical foundation for automation interviews.', duration: '60–90 min', xp: 120, type: 'Career' },
-  { title: 'Watch one SCADA dashboard demo', reason: 'Understand how monitoring and control screens look in real work.', duration: '30–45 min', xp: 70, type: 'Career' },
-  { title: 'Review basic electrical control drawings', reason: 'Drawings are a core skill for electrical/control engineers.', duration: '45–60 min', xp: 90, type: 'Electrical Basics' },
+  { title: 'أساسيات PLC: المدخلات والمخرجات', reason: 'أول أساس عملي مهم لمقابلات الأتمتة.', duration: '60–90 min', xp: 120, type: 'المسار المهني' },
+  { title: 'Watch one تجربة شاشة SCADA', reason: 'لفهم شكل شاشات المراقبة والتحكم في العمل الحقيقي.', duration: '30–45 min', xp: 70, type: 'المسار المهني' },
+  { title: 'راجع أساسيات مخططات التحكم الكهربائي', reason: 'المخططات مهارة أساسية لمهندس الكهرباء والتحكم.', duration: '45–60 min', xp: 90, type: 'Electrical Basics' },
 ]
 
-const defaultProfile = { name: 'Ascender', level: 1, xp: 0, phase: 'Foundation', momentum: 55, focus: 50, energy: 50, professionalValue: 5 }
+const defaultProfile = { name: 'المتطوّر', level: 1, xp: 0, phase: 'مرحلة التأسيس', momentum: 55, focus: 50, energy: 50, professionalValue: 5 }
 
 function todayKey() { return new Date().toISOString().slice(0, 10) }
-function formatTime(date) { return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }
-function formatDate(date) { return date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }
+function formatTime(date) { return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) }
+function formatDate(date) { return date.toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }
 function getPhase(level) {
-  if (level >= 31) return 'High Performance'
-  if (level >= 21) return 'Professional Growth'
-  if (level >= 11) return 'Discipline'
-  return 'Foundation'
+  if (level >= 31) return 'الأداء العالي'
+  if (level >= 21) return 'النمو المهني'
+  if (level >= 11) return 'الانضباط'
+  return 'مرحلة التأسيس'
 }
 function getMomentumStatus(value) {
-  if (value >= 75) return 'Rising'
-  if (value >= 45) return 'Stable'
-  return 'Recovery Needed'
+  if (value >= 75) return 'صاعد'
+  if (value >= 45) return 'مستقر'
+  return 'يحتاج استعادة'
 }
 function buildTodayPlan(profile, checks) {
-  const lowEnergy = profile.energy < 40
+  const lowالطاقة = profile.energy < 40
   const lowMomentum = profile.momentum < 40
-  const mission = lowEnergy || lowMomentum
-    ? { title: 'Recovery Study Session', reason: 'Your system load is low today. Keep the chain alive with a lighter session.', duration: '25–40 min', xp: 45, type: 'Recovery Career' }
+  const mission = lowالطاقة || lowMomentum
+    ? { title: 'جلسة دراسة خفيفة للاستعادة', reason: 'طاقتك منخفضة اليوم. حافظ على الاستمرارية بجلسة خفيفة.', duration: '25–40 min', xp: 45, type: 'استعادة مهنية' }
     : foundationMissions[(new Date().getDate() - 1) % foundationMissions.length]
 
   const core = [
-    { id: 'career', title: lowEnergy ? 'Light Study' : 'Career Study', detail: lowEnergy ? '25 minutes only' : '60 minutes focused learning', xp: lowEnergy ? 35 : 80, checked: checks.career || false, layer: 'xp' },
-    { id: 'movement', title: 'Movement', detail: lowEnergy ? '10 min walk' : '20–30 min walk or workout', xp: lowEnergy ? 20 : 45, checked: checks.movement || false, layer: 'xp' },
-    { id: 'prayer', title: 'Prayer Stability', detail: 'Core obligation layer — no XP, only stability', xp: 0, checked: checks.prayer || false, layer: 'stability' },
-    { id: 'sleep', title: 'Sleep Reset', detail: 'Prepare for better sleep tonight', xp: 25, checked: checks.sleep || false, layer: 'xp' },
+    { id: 'career', title: lowالطاقة ? 'دراسة خفيفة' : 'دراسة مهنية', detail: lowالطاقة ? '25 دقيقة فقط' : '60 دقيقة تعلم مركز', xp: lowالطاقة ? 35 : 80, checked: checks.career || false, layer: 'xp' },
+    { id: 'movement', title: 'الحركة', detail: lowالطاقة ? 'مشي 10 دقائق' : 'مشي أو تمرين 20–30 دقيقة', xp: lowالطاقة ? 20 : 45, checked: checks.movement || false, layer: 'xp' },
+    { id: 'prayer', title: 'ثبات الصلاة', detail: 'طبقة إلزامية أساسية — بدون نقاط، فقط ثبات', xp: 0, checked: checks.prayer || false, layer: 'stability' },
+    { id: 'sleep', title: 'ضبط النوم', detail: 'استعد لنوم أفضل الليلة', xp: 25, checked: checks.sleep || false, layer: 'xp' },
   ]
 
   const recommendation = lowMomentum
-    ? 'Recovery Mode is recommended today. Do the minimum, protect consistency, and avoid overload.'
-    : lowEnergy
-      ? 'Energy is low. Keep the day light but do not disappear from the system.'
-      : 'Momentum is stable. Complete the main mission and one movement task.'
-  return { mission, core, recommendation, mode: lowMomentum || lowEnergy ? 'Recovery' : 'Normal' }
+    ? 'وضع الاستعادة مناسب اليوم. أنجز الحد الأدنى واحمِ الاستمرارية بدون ضغط زائد.'
+    : lowالطاقة
+      ? 'الطاقة منخفضة. خفف اليوم لكن لا تنقطع عن النظام.'
+      : 'الزخم مستقر. أنجز المهمة الرئيسية ومهمة حركة واحدة.'
+  return { mission, core, recommendation, mode: lowMomentum || lowالطاقة ? 'Recovery' : 'Normal' }
 }
 
 export default function App() {
@@ -58,7 +58,7 @@ export default function App() {
   const [authMode, setAuthMode] = useState('login')
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(defaultProfile)
-  const [checks, setChecks] = useState({})
+  const [checks, setإنجازs] = useState({})
   const [toast, setToast] = useState('')
   const [now, setNow] = useState(new Date())
   const [view, setView] = useState('home')
@@ -78,9 +78,9 @@ export default function App() {
 
   useEffect(() => {
     const saved = localStorage.getItem('ascend-profile')
-    const savedChecks = localStorage.getItem('ascend-checks-' + todayKey())
+    const savedإنجازs = localStorage.getItem('ascend-checks-' + todayKey())
     if (saved) setProfile(JSON.parse(saved))
-    if (savedChecks) setChecks(JSON.parse(savedChecks))
+    if (savedإنجازs) setإنجازs(JSON.parse(savedإنجازs))
   }, [])
 
   useEffect(() => { localStorage.setItem('ascend-profile', JSON.stringify(profile)) }, [profile])
@@ -100,17 +100,17 @@ export default function App() {
       ? await supabase.auth.signUp({ email, password })
       : await supabase.auth.signInWithPassword({ email, password })
     if (result.error) notify(result.error.message)
-    else notify(authMode === 'signup' ? 'Account created' : 'Logged in')
+    else notify(authMode === 'signup' ? 'تم إنشاء الحساب' : 'تم تسجيل الدخول')
   }
 
   async function signOut() { await supabase.auth.signOut() }
 
   function completeCore(item) {
     if (checks[item.id]) return
-    setChecks(prev => ({ ...prev, [item.id]: true }))
+    setإنجازs(prev => ({ ...prev, [item.id]: true }))
     if (item.layer === 'stability') {
       setProfile(prev => ({ ...prev, momentum: Math.min(100, prev.momentum + 4) }))
-      notify('Stability confirmed')
+      notify('تم تأكيد الثبات')
       return
     }
     addXP(item.xp, item.title)
@@ -134,16 +134,16 @@ export default function App() {
       }
       return { ...prev, xp, level, phase: getPhase(level), momentum, focus, professionalValue }
     })
-    notify(`Completed: ${label}`)
+    notify(`تم إنجاز: ${label}`)
   }
 
   function missedPrayerRecovery() {
-    notify('Recovery action added: pray sunnah or quiet reflection')
+    notify('تمت إضافة إجراء استعادة: نافلة أو لحظة هدوء ومراجعة')
     setProfile(prev => ({ ...prev, momentum: Math.max(0, prev.momentum - 8) }))
   }
 
   if (loading) {
-    return <main className="auth-screen"><div className="auth-card"><div className="logo">A</div><h1>Ascend</h1><p>Loading your system...</p></div></main>
+    return <main className="auth-screen"><div className="auth-card"><div className="logo">A</div><h1>Ascend</h1><p>جاري تحميل النظام...</p></div></main>
   }
 
   if (!session) {
@@ -152,14 +152,14 @@ export default function App() {
         {toast && <div className="toast">{toast}</div>}
         <form className="auth-card" onSubmit={signIn}>
           <div className="logo">A</div>
-          <p className="kicker">PERSONAL OPERATING SYSTEM</p>
+          <p className="kicker">نظام التشغيل الشخصي</p>
           <h1>Ascend</h1>
-          <p>Build your career, discipline, energy, and long-term life progress.</p>
+          <p>ابنِ مسارك المهني، انضباطك، طاقتك، وتطورك طويل المدى.</p>
           <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
           <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-          <button>{authMode === 'signup' ? 'Create Account' : 'Login'}</button>
+          <button>{authMode === 'signup' ? 'إنشاء حساب' : 'دخول'}</button>
           <button type="button" className="secondary" onClick={() => setAuthMode(authMode === 'signup' ? 'login' : 'signup')}>
-            {authMode === 'signup' ? 'I already have an account' : 'Create new account'}
+            {authMode === 'signup' ? 'لدي حساب بالفعل' : 'إنشاء حساب جديد'}
           </button>
         </form>
       </main>
@@ -172,49 +172,49 @@ export default function App() {
       <header className="topbar">
         <div className="brand"><div className="logo small">A</div><div><p>ASCEND</p><h1>{profile.phase} · Level {profile.level}</h1></div></div>
         <div className="clock"><b>{formatTime(now)}</b><span>{formatDate(now)}</span></div>
-        <button className="logout" onClick={signOut}>Logout</button>
+        <button className="logout" onClick={signOut}>خروج</button>
       </header>
 
       <nav className="nav">
-        <button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}>Command</button>
-        <button className={view === 'career' ? 'active' : ''} onClick={() => setView('career')}>Career</button>
-        <button className={view === 'analytics' ? 'active' : ''} onClick={() => setView('analytics')}>Analytics</button>
+        <button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}>الرئيسية</button>
+        <button className={view === 'career' ? 'active' : ''} onClick={() => setView('career')}>المسار المهني</button>
+        <button className={view === 'analytics' ? 'active' : ''} onClick={() => setView('analytics')}>الإحصائيات</button>
       </nav>
 
       {view === 'home' && (
         <>
           <section className="hero">
-            <div><p className="kicker">TODAY'S SYSTEM STATUS</p><h2>{plan.mode === 'Recovery' ? 'Recovery Mode' : 'Command Center'}</h2><p>{plan.recommendation}</p></div>
-            <div className="level-card"><span>LEVEL</span><strong>{profile.level}</strong><p>{profile.phase}</p><div className="bar"><div style={{ width: `${xpPercent}%` }} /></div><small>{profile.xp}/{xpNeed} XP</small></div>
+            <div><p className="kicker">حالة النظام اليوم</p><h2>{plan.mode === 'Recovery' ? 'وضع الاستعادة' : 'الرئيسية Center'}</h2><p>{plan.recommendation}</p></div>
+            <div className="level-card"><span>المستوى</span><strong>{profile.level}</strong><p>{profile.phase}</p><div className="bar"><div style={{ width: `${xpPercent}%` }} /></div><small>{profile.xp}/{xpNeed} XP</small></div>
           </section>
 
           <section className="grid main-grid">
             <div className="card mission-card">
-              <p className="kicker">MAIN MISSION</p><h3>{plan.mission.title}</h3><p>{plan.mission.reason}</p>
+              <p className="kicker">المهمة الرئيسية</p><h3>{plan.mission.title}</h3><p>{plan.mission.reason}</p>
               <div className="mission-meta"><span>{plan.mission.duration}</span><span>+{plan.mission.xp} XP</span><span>{plan.mission.type}</span></div>
-              <button onClick={completeMission}>Complete Mission</button>
+              <button onClick={completeMission}>إنهاء المهمة</button>
             </div>
-            <div className="card"><p className="kicker">MOMENTUM</p><h3>{momentumStatus}</h3><div className="bar big"><div style={{ width: `${profile.momentum}%` }} /></div><p className="muted">Momentum controls daily difficulty, recommendations, and recovery mode.</p></div>
+            <div className="card"><p className="kicker">الزخم</p><h3>{momentumStatus}</h3><div className="bar big"><div style={{ width: `${profile.momentum}%` }} /></div><p className="muted">الزخم يحدد صعوبة اليوم، التوصيات، ووضع الاستعادة.</p></div>
             <div className="card daily-core">
-              <p className="kicker">DAILY CORE</p>
+              <p className="kicker">الأساسيات اليومية</p>
               {plan.core.map(item => (
                 <div className={'core-item ' + (checks[item.id] ? 'done' : '')} key={item.id}>
-                  <div><h4>{item.title}</h4><p>{item.detail}</p>{item.layer === 'stability' && <small>No XP · Stability Layer</small>}</div>
-                  <button onClick={() => completeCore(item)}>{checks[item.id] ? 'Done' : 'Check'}</button>
+                  <div><h4>{item.title}</h4><p>{item.detail}</p>{item.layer === 'stability' && <small>بدون XP · طبقة الثبات</small>}</div>
+                  <button onClick={() => completeCore(item)}>{checks[item.id] ? 'تم' : 'إنجاز'}</button>
                 </div>
               ))}
             </div>
-            <div className="card prayer-card"><p className="kicker">CORE STABILITY</p><h3>Prayer is not XP</h3><p>Prayer is treated as an obligation layer, not a points task. If missed, the system suggests corrective recovery, not punishment.</p><button className="secondary" onClick={missedPrayerRecovery}>Missed prayer recovery</button></div>
+            <div className="card prayer-card"><p className="kicker">الثبات الأساسي</p><h3>الصلاة ليست نقاط</h3><p>الصلاة تُعامل كطبقة إلزامية أساسية، وليست مهمة نقاط. إذا حصل تقصير، يقترح النظام إجراء استعادة لا عقوبة.</p><button className="secondary" onClick={missedPrayerRecovery}>إجراء الاستعادة</button></div>
           </section>
         </>
       )}
 
       {view === 'career' && (
         <section className="grid">
-          <div className="card wide"><p className="kicker">PHASE 1 CAREER ROADMAP</p><h3>Automation + SCADA + BMS</h3><p className="muted">The current goal is employability foundation, portfolio projects, and readiness for junior interviews.</p></div>
+          <div className="card wide"><p className="kicker">الخطة المهنية — المرحلة الأولى</p><h3>الأتمتة + السكادا + أنظمة المباني الذكية</h3><p className="muted">الهدف الحالي هو بناء أساس قابل للتوظيف، مشاريع بسيطة للملف المهني، والاستعداد لمقابلات المبتدئين.</p></div>
           <div className="tracks">
             {careerTracks.map(track => (
-              <div className="card track" key={track.key}><h3>{track.name}</h3><div className="bar"><div style={{ width: `${track.progress}%` }} /></div><p>Progress: {track.progress}%</p><small>Next: {track.next}</small></div>
+              <div className="card track" key={track.key}><h3>{track.name}</h3><div className="bar"><div style={{ width: `${track.progress}%` }} /></div><p>التقدم: {track.progress}%</p><small>التالي: {track.next}</small></div>
             ))}
           </div>
         </section>
@@ -222,10 +222,10 @@ export default function App() {
 
       {view === 'analytics' && (
         <section className="grid analytics">
-          <Stat title="Discipline" value={profile.momentum} />
-          <Stat title="Focus" value={profile.focus} />
-          <Stat title="Energy" value={profile.energy} />
-          <Stat title="Professional Value" value={profile.professionalValue} />
+          <Stat title="الانضباط" value={profile.momentum} />
+          <Stat title="التركيز" value={profile.focus} />
+          <Stat title="الطاقة" value={profile.energy} />
+          <Stat title="القيمة المهنية" value={profile.professionalValue} />
         </section>
       )}
     </main>
