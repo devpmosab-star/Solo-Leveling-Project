@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {})
+}
+
 const careerTracks = [
   { key: 'plc', name: 'PLC / الأتمتة', progress: 8, next: 'أساسيات المدخلات والمخرجات' },
   { key: 'scada', name: 'SCADA / واجهات المراقبة', progress: 3, next: 'تجربة شاشة SCADA' },
@@ -196,6 +200,10 @@ export default function App() {
   const [view, setView] = useState('home')
   const [completedSkills, setCompletedSkills] = useState([])
   const [completedProjects, setCompletedProjects] = useState([])
+  const [dailyReport, setDailyReport] = useState(null)
+  const [energyInput, setEnergyInput] = useState(50)
+  const [sleepHours, setSleepHours] = useState(5)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000)
@@ -221,6 +229,8 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ascend-checks-' + todayKey(), JSON.stringify(checks)) }, [checks])
   useEffect(() => { localStorage.setItem('ascend-career-skills', JSON.stringify(completedSkills)) }, [completedSkills])
   useEffect(() => { localStorage.setItem('ascend-career-projects', JSON.stringify(completedProjects)) }, [completedProjects])
+  useEffect(() => { localStorage.setItem('ascend-energy-input', String(energyInput)) }, [energyInput])
+  useEffect(() => { localStorage.setItem('ascend-sleep-hours', String(sleepHours)) }, [sleepHours])
 
   const timeState = useMemo(() => getTimeState(now), [now])
   const timeline = useMemo(() => getTimeline(), [])
@@ -239,8 +249,53 @@ export default function App() {
     available: project.status === 'open' || profile.level >= project.level * 4
   }))
   const careerProgressValue = Math.round(((completedSkills.length + completedProjects.length * 2) / (careerSkills.length + careerProjects.length * 2)) * 100)
+  const adjustedEnergy = Math.max(0, Math.min(100, Math.round((energyInput * 0.65) + (sleepHours >= 7 ? 25 : sleepHours >= 5 ? 10 : -5))))
+  const readiness = Math.round((profile.momentum + adjustedEnergy + profile.focus + profile.professionalValue) / 4)
 
   function notify(text) { setToast(text); setTimeout(() => setToast(''), 2200) }
+
+  async function enableNotifications() {
+    if (!('Notification' in window)) {
+      notify('المتصفح لا يدعم الإشعارات')
+      return
+    }
+    const permission = await Notification.requestPermission()
+    if (permission === 'granted') {
+      setNotificationsEnabled(true)
+      new Notification('Ascend مفعل', { body: 'سيتم استخدام الإشعارات لاحقًا للتذكير الذكي.' })
+      notify('تم تفعيل الإشعارات')
+    } else {
+      notify('لم يتم تفعيل الإشعارات')
+    }
+  }
+
+  function sendTestNotification() {
+    if (Notification.permission === 'granted') {
+      new Notification('Ascend', { body: timeState.key === 'deep' ? 'نافذة التركيز العميق نشطة الآن.' : 'النظام يعمل ويتابع حالة اليوم.' })
+    } else {
+      notify('فعّل الإشعارات أولًا')
+    }
+  }
+
+  function generateDailyReport() {
+    const load = readiness >= 70 ? 'قوي' : readiness >= 45 ? 'متوسط' : 'خفيف'
+    const report = {
+      title: readiness >= 70 ? 'يوم مناسب للتقدم' : readiness >= 45 ? 'يوم متوازن' : 'يوم استعادة',
+      load,
+      summary: readiness >= 70
+        ? 'طاقتك وزخمك يسمحان بمهمة مهنية قوية اليوم.'
+        : readiness >= 45
+          ? 'حافظ على التوازن. أنجز المهمة الأساسية بدون ضغط زائد.'
+          : 'الأفضل اليوم تقليل الحمل وحماية الاستمرارية.',
+      tasks: readiness >= 70
+        ? ['مهمة مهنية عميقة 90 دقيقة', 'حركة 20 دقيقة', 'مراجعة إنجليزية خفيفة']
+        : readiness >= 45
+          ? ['مهمة مهنية 45–60 دقيقة', 'مشي 10–15 دقيقة', 'إغلاق اليوم مبكرًا']
+          : ['جلسة خفيفة 25 دقيقة', 'صلاة وثبات', 'نوم واستعادة'],
+    }
+    setDailyReport(report)
+    notify('تم توليد خطة اليوم')
+  }
 
   async function signIn(e) {
     e.preventDefault()
@@ -351,6 +406,7 @@ export default function App() {
         <button className={view === 'career' ? 'active' : ''} onClick={() => setView('career')}>المسار المهني</button>
         <button className={view === 'skills' ? 'active' : ''} onClick={() => setView('skills')}>المهارات والمشاريع</button>
         <button className={view === 'analytics' ? 'active' : ''} onClick={() => setView('analytics')}>الإحصائيات</button>
+        <button className={view === 'settings' ? 'active' : ''} onClick={() => setView('settings')}>إعدادات اليوم</button>
       </nav>
 
       {view === 'home' && (
@@ -387,6 +443,24 @@ export default function App() {
               ))}
             </div>
             <div className="card prayer-card"><p className="kicker">الثبات الأساسي</p><h3>الصلاة ليست نقاط</h3><p>الصلاة تُعامل كطبقة إلزامية أساسية، وليست مهمة نقاط. إذا حصل تقصير، يقترح النظام إجراء استعادة لا عقوبة.</p><button className="secondary" onClick={missedPrayerRecovery}>إجراء الاستعادة</button></div>
+
+            <div className="card readiness-card">
+              <p className="kicker">جاهزية اليوم</p>
+              <h3>{readiness}%</h3>
+              <div className="bar big"><div style={{ width: `${readiness}%` }} /></div>
+              <p className="muted">تحسب من الزخم، الطاقة، التركيز، والقيمة المهنية.</p>
+              <button onClick={generateDailyReport}>توليد خطة اليوم</button>
+            </div>
+
+            {dailyReport && (
+              <div className="card report-card wide">
+                <p className="kicker">تقرير اليوم الذكي</p>
+                <h3>{dailyReport.title}</h3>
+                <p>{dailyReport.summary}</p>
+                <div className="mission-meta"><span>الحمل: {dailyReport.load}</span><span>حسب الوقت والطاقة</span></div>
+                {dailyReport.tasks.map((task, i) => <div className="report-task" key={i}>✓ {task}</div>)}
+              </div>
+            )}
           </section>
         </>
       )}
@@ -443,6 +517,48 @@ export default function App() {
                 </button>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+
+      {view === 'settings' && (
+        <section className="grid settings-grid">
+          <div className="card wide">
+            <p className="kicker">إعدادات اليوم</p>
+            <h3>النظام يحتاج يعرف طاقتك ونومك حتى يعطيك يوم مناسب</h3>
+            <p className="muted">هذه الإعدادات مبدئية الآن، ولاحقًا يمكن ربطها تلقائيًا بالنوم والرياضة والإشعارات.</p>
+          </div>
+
+          <div className="card control-card">
+            <p className="kicker">الطاقة الحالية</p>
+            <h3>{energyInput}%</h3>
+            <input type="range" min="0" max="100" value={energyInput} onChange={e => setEnergyInput(Number(e.target.value))} />
+            <p className="muted">اختر شعورك العام بالطاقة اليوم.</p>
+          </div>
+
+          <div className="card control-card">
+            <p className="kicker">ساعات النوم</p>
+            <h3>{sleepHours} ساعات</h3>
+            <input type="range" min="0" max="10" value={sleepHours} onChange={e => setSleepHours(Number(e.target.value))} />
+            <p className="muted">النوم يؤثر مباشرة على جاهزية اليوم.</p>
+          </div>
+
+          <div className="card control-card">
+            <p className="kicker">الإشعارات</p>
+            <h3>{notificationsEnabled ? 'مفعلة' : 'غير مفعلة'}</h3>
+            <p className="muted">سنستخدمها لاحقًا لتذكيرك بوقت التركيز، الاستعادة، والنوم.</p>
+            <div className="button-row">
+              <button onClick={enableNotifications}>تفعيل الإشعارات</button>
+              <button className="secondary" onClick={sendTestNotification}>تجربة إشعار</button>
+            </div>
+          </div>
+
+          <div className="card control-card">
+            <p className="kicker">الجاهزية المحسوبة</p>
+            <h3>{readiness}%</h3>
+            <div className="bar big"><div style={{ width: `${readiness}%` }} /></div>
+            <p className="muted">الطاقة المعدلة: {adjustedEnergy}%</p>
           </div>
         </section>
       )}

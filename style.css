@@ -121,3 +121,34 @@ body{direction:rtl}.card{text-align:right}.clock{text-align:left}.auth-card{text
 .project-node{
   border-color:rgba(255,209,102,.20);
 }
+
+/* DAILY GENERATOR + NOTIFICATIONS */
+.readiness-card h3,.control-card h3{
+  font-size:48px;
+  margin:4px 0 14px;
+}
+.report-card{
+  grid-column:1/-1;
+  border-color:rgba(125,255,178,.28);
+}
+.report-task{
+  padding:12px;
+  border-radius:14px;
+  background:rgba(125,255,178,.07);
+  border:1px solid rgba(125,255,178,.14);
+  margin-top:8px;
+  color:#eafff2;
+  font-weight:800;
+}
+.settings-grid{
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+}
+.control-card input[type="range"]{
+  width:100%;
+  accent-color:#6ee7ff;
+}
+.button-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
