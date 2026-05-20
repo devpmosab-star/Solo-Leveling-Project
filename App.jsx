@@ -193,6 +193,7 @@ export default function App() {
   const [password, setPassword] = useState('')
   const [authMode, setAuthMode] = useState('login')
   const [loading, setLoading] = useState(true)
+  const [cloudReady, setCloudReady] = useState(false)
   const [profile, setProfile] = useState(defaultProfile)
   const [checks, setإنجازs] = useState({})
   const [toast, setToast] = useState('')
@@ -218,6 +219,107 @@ export default function App() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
+
+  useEffect(() => {
+    if (session?.user) loadCloudData(session.user)
+  }, [session])
+
+  async function loadCloudData(user) {
+    setCloudReady(false)
+
+    let { data: cloudProfile } = await supabase
+      .from('ascend_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!cloudProfile) {
+      const { data: created } = await supabase
+        .from('ascend_profiles')
+        .insert({ id: user.id, name: user.email?.split('@')[0] || 'المتطوّر' })
+        .select()
+        .single()
+      cloudProfile = created
+    }
+
+    if (cloudProfile) {
+      setProfile({
+        name: cloudProfile.name || 'المتطوّر',
+        level: cloudProfile.level ?? 1,
+        xp: cloudProfile.xp ?? 0,
+        phase: cloudProfile.phase || 'مرحلة التأسيس',
+        momentum: cloudProfile.momentum ?? 55,
+        focus: cloudProfile.focus ?? 50,
+        energy: cloudProfile.energy ?? 50,
+        professionalValue: cloudProfile.professional_value ?? 5
+      })
+    }
+
+    const today = todayKey()
+
+    const { data: dailyLog } = await supabase
+      .from('ascend_daily_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('log_date', today)
+      .maybeSingle()
+
+    if (dailyLog) {
+      setChecks(dailyLog.checks || {})
+      setEnergyInput(dailyLog.energy_input ?? 50)
+      setSleepHours(Number(dailyLog.sleep_hours ?? 5))
+      setDailyReport(dailyLog.daily_report || null)
+    } else {
+      await supabase.from('ascend_daily_logs').insert({
+        user_id: user.id,
+        log_date: today,
+        energy_input: energyInput,
+        sleep_hours: sleepHours,
+        readiness: 50,
+        checks: {}
+      })
+    }
+
+    const { data: skills } = await supabase.from('ascend_career_skills').select('skill_id').eq('user_id', user.id)
+    const { data: projects } = await supabase.from('ascend_career_projects').select('project_id').eq('user_id', user.id)
+
+    setCompletedSkills((skills || []).map(s => s.skill_id))
+    setCompletedProjects((projects || []).map(p => p.project_id))
+    setCloudReady(true)
+  }
+
+  async function saveProfileCloud(nextProfile) {
+    if (!session?.user || !cloudReady) return
+    await supabase.from('ascend_profiles').upsert({
+      id: session.user.id,
+      name: nextProfile.name,
+      level: nextProfile.level,
+      xp: nextProfile.xp,
+      phase: nextProfile.phase,
+      momentum: nextProfile.momentum,
+      focus: nextProfile.focus,
+      energy: nextProfile.energy,
+      professional_value: nextProfile.professionalValue,
+      updated_at: new Date().toISOString()
+    })
+  }
+
+  async function saveDailyLogCloud(extra = {}) {
+    if (!session?.user || !cloudReady) return
+    await supabase.from('ascend_daily_logs').upsert({
+      user_id: session.user.id,
+      log_date: todayKey(),
+      energy_input: energyInput,
+      sleep_hours: sleepHours,
+      readiness,
+      time_state: timeState?.key,
+      daily_report: dailyReport,
+      checks,
+      updated_at: new Date().toISOString(),
+      ...extra
+    }, { onConflict: 'user_id,log_date' })
+  }
+
   useEffect(() => {
     const saved = localStorage.getItem('ascend-profile')
     const savedإنجازs = localStorage.getItem('ascend-checks-' + todayKey())
@@ -231,6 +333,8 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ascend-career-projects', JSON.stringify(completedProjects)) }, [completedProjects])
   useEffect(() => { localStorage.setItem('ascend-energy-input', String(energyInput)) }, [energyInput])
   useEffect(() => { localStorage.setItem('ascend-sleep-hours', String(sleepHours)) }, [sleepHours])
+  useEffect(() => { saveProfileCloud(profile) }, [profile])
+  useEffect(() => { saveDailyLogCloud() }, [checks, energyInput, sleepHours, dailyReport])
 
   const timeState = useMemo(() => getTimeState(now), [now])
   const timeline = useMemo(() => getTimeline(), [])
@@ -344,6 +448,7 @@ export default function App() {
   function completeSkill(skill) {
     if (!skill.available || completedSkills.includes(skill.id)) return
     setCompletedSkills(prev => [...prev, skill.id])
+    if (session?.user) supabase.from('ascend_career_skills').insert({ user_id: session.user.id, skill_id: skill.id })
     addXP(90 + skill.level * 35, skill.title)
     setProfile(prev => ({
       ...prev,
@@ -355,6 +460,7 @@ export default function App() {
   function completeProject(project) {
     if (!project.available || completedProjects.includes(project.id)) return
     setCompletedProjects(prev => [...prev, project.id])
+    if (session?.user) supabase.from('ascend_career_projects').insert({ user_id: session.user.id, project_id: project.id })
     addXP(project.xp, project.title)
     setProfile(prev => ({
       ...prev,
@@ -366,6 +472,7 @@ export default function App() {
   function missedPrayerRecovery() {
     notify('تمت إضافة إجراء استعادة: نافلة أو لحظة هدوء ومراجعة')
     setProfile(prev => ({ ...prev, momentum: Math.max(0, prev.momentum - 8) }))
+    if (session?.user) supabase.from('ascend_prayer_stability').upsert({ user_id: session.user.id, prayer_date: todayKey(), status: 'recovery', recovery_action: 'نافلة أو لحظة هدوء ومراجعة' }, { onConflict: 'user_id,prayer_date' })
   }
 
   if (loading) {
@@ -398,7 +505,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand"><div className="logo small">A</div><div><p>ASCEND</p><h1>{profile.phase} · Level {profile.level}</h1></div></div>
         <div className="clock"><b>{formatTime(now)}</b><span>{formatDate(now)}</span></div>
-        <button className="logout" onClick={signOut}>خروج</button>
+        <div className="cloud-status">{cloudReady ? "السحابة متصلة" : "جاري المزامنة"}</div><button className="logout" onClick={signOut}>خروج</button>
       </header>
 
       <nav className="nav">
