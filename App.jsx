@@ -18,6 +18,117 @@ const defaultProfile = { name: 'المتطوّر', level: 1, xp: 0, phase: 'مر
 function todayKey() { return new Date().toISOString().slice(0, 10) }
 function formatTime(date) { return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) }
 function formatDate(date) { return date.toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }
+
+function getHour(date) {
+  return date.getHours() + date.getMinutes() / 60
+}
+
+function getTimeState(date) {
+  const h = getHour(date)
+
+  if (h >= 2 && h < 5) {
+    return {
+      key: 'sleep',
+      name: 'وضع النوم',
+      focus: 'الراحة أولاً',
+      advice: 'هذا وقت النوم الأساسي. لا مهام الآن إلا إذا كنت مستيقظًا للفجر.',
+      intensity: 'منخفض جدًا',
+    }
+  }
+
+  if (h >= 5 && h < 7) {
+    return {
+      key: 'fajr',
+      name: 'نافذة الفجر',
+      focus: 'ثبات وبداية هادئة',
+      advice: 'ابدأ اليوم بهدوء. الصلاة ثم ماء وحركة خفيفة بدون ضغط.',
+      intensity: 'منخفض',
+    }
+  }
+
+  if (h >= 7 && h < 8) {
+    return {
+      key: 'activation',
+      name: 'تشغيل اليوم',
+      focus: 'تهيئة الطاقة',
+      advice: 'جهز نفسك لبلوك التركيز. لا تبدأ بمهام كثيرة.',
+      intensity: 'متوسط',
+    }
+  }
+
+  if (h >= 8 && h < 10.5) {
+    return {
+      key: 'deep',
+      name: 'نافذة التركيز العميق',
+      focus: 'المهمة المهنية الرئيسية',
+      advice: 'هذا أفضل وقت للتعلم المهني. أنجز مهمة PLC / SCADA / BMS الأساسية.',
+      intensity: 'عالي',
+    }
+  }
+
+  if (h >= 10.5 && h < 12) {
+    return {
+      key: 'light',
+      name: 'عمل خفيف',
+      focus: 'مراجعة وتنظيم',
+      advice: 'استخدم هذه الفترة للإنجليزي، مراجعة خفيفة، أو تجهيز ملفات.',
+      intensity: 'متوسط',
+    }
+  }
+
+  if (h >= 12 && h < 13) {
+    return {
+      key: 'transition',
+      name: 'الانتقال للدوام',
+      focus: 'تجهيز واستقرار',
+      advice: 'لا تضغط نفسك الآن. استعد للدوام وحافظ على الهدوء.',
+      intensity: 'منخفض',
+    }
+  }
+
+  if (h >= 13 && h < 22) {
+    return {
+      key: 'work',
+      name: 'وضع الدوام',
+      focus: 'حفظ الزخم',
+      advice: 'أثناء الدوام لا نضع مهام ثقيلة. المطلوب فقط الثبات وعدم كسر النظام.',
+      intensity: 'منخفض',
+    }
+  }
+
+  if (h >= 22 && h < 24) {
+    return {
+      key: 'evening',
+      name: 'استعادة بعد الدوام',
+      focus: 'مراجعة خفيفة',
+      advice: 'إذا طاقتك جيدة راجع شيئًا بسيطًا. إذا متعب، اكتفِ بالاستعادة.',
+      intensity: 'منخفض إلى متوسط',
+    }
+  }
+
+  return {
+    key: 'shutdown',
+    name: 'إغلاق اليوم',
+    focus: 'تهدئة وتجهيز للنوم',
+    advice: 'خفف الشاشة. لا تبدأ مهمة ثقيلة. جهز النوم حتى لا تضرب طاقة الغد.',
+    intensity: 'منخفض جدًا',
+  }
+}
+
+function getTimeline() {
+  return [
+    { time: '5:00–7:00', title: 'الفجر والثبات', type: 'stability' },
+    { time: '7:00–8:00', title: 'تشغيل اليوم', type: 'activation' },
+    { time: '8:00–10:30', title: 'تعلم مهني عميق', type: 'deep' },
+    { time: '10:30–12:00', title: 'مراجعة خفيفة / إنجليزي', type: 'light' },
+    { time: '12:00–1:00', title: 'الاستعداد للدوام', type: 'transition' },
+    { time: '1:00–10:00', title: 'الدوام', type: 'work' },
+    { time: '10:00–12:00', title: 'استعادة ومراجعة بسيطة', type: 'evening' },
+    { time: '12:00–2:00', title: 'إغلاق اليوم والنوم', type: 'shutdown' },
+  ]
+}
+
+
 function getPhase(level) {
   if (level >= 31) return 'الأداء العالي'
   if (level >= 21) return 'النمو المهني'
@@ -29,7 +140,7 @@ function getMomentumStatus(value) {
   if (value >= 45) return 'مستقر'
   return 'يحتاج استعادة'
 }
-function buildTodayPlan(profile, checks) {
+function buildTodayPlan(profile, checks, timeState) {
   const lowالطاقة = profile.energy < 40
   const lowMomentum = profile.momentum < 40
   const mission = lowالطاقة || lowMomentum
@@ -86,7 +197,9 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ascend-profile', JSON.stringify(profile)) }, [profile])
   useEffect(() => { localStorage.setItem('ascend-checks-' + todayKey(), JSON.stringify(checks)) }, [checks])
 
-  const plan = useMemo(() => buildTodayPlan(profile, checks), [profile, checks])
+  const timeState = useMemo(() => getTimeState(now), [now])
+  const timeline = useMemo(() => getTimeline(), [])
+  const plan = useMemo(() => buildTodayPlan(profile, checks, timeState), [profile, checks, timeState])
   const xpNeed = 500 + profile.level * 120
   const xpPercent = Math.min(100, Math.round((profile.xp / xpNeed) * 100))
   const momentumStatus = getMomentumStatus(profile.momentum)
@@ -167,7 +280,7 @@ export default function App() {
   }
 
   return (
-    <main className={'app phase-' + profile.phase.toLowerCase().replaceAll(' ', '-')}>
+    <main className={'app phase-' + profile.phase.toLowerCase().replaceAll(' ', '-') + ' state-' + timeState.key}>
       {toast && <div className="toast">{toast}</div>}
       <header className="topbar">
         <div className="brand"><div className="logo small">A</div><div><p>ASCEND</p><h1>{profile.phase} · Level {profile.level}</h1></div></div>
@@ -195,6 +308,16 @@ export default function App() {
               <button onClick={completeMission}>إنهاء المهمة</button>
             </div>
             <div className="card"><p className="kicker">الزخم</p><h3>{momentumStatus}</h3><div className="bar big"><div style={{ width: `${profile.momentum}%` }} /></div><p className="muted">الزخم يحدد صعوبة اليوم، التوصيات، ووضع الاستعادة.</p></div>
+
+            <div className="card timeline-card">
+              <p className="kicker">خط اليوم الذكي</p>
+              {timeline.map(block => (
+                <div className={'timeline-item ' + (block.type === timeState.key ? 'active' : '')} key={block.type}>
+                  <span>{block.time}</span>
+                  <b>{block.title}</b>
+                </div>
+              ))}
+            </div>
             <div className="card daily-core">
               <p className="kicker">الأساسيات اليومية</p>
               {plan.core.map(item => (
