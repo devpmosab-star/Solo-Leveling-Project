@@ -154,6 +154,61 @@ function getTimeline() {
 }
 
 
+
+function timeToMinutes(value) {
+  const [h, m] = value.split(':').map(Number)
+  return h * 60 + m
+}
+
+function minutesToText(totalSeconds) {
+  const mins = Math.floor(totalSeconds / 60)
+  const secs = totalSeconds % 60
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+}
+
+const defaultPrayerTimes = {
+  fajr: '04:25',
+  dhuhr: '12:15',
+  asr: '15:35',
+  maghrib: '18:55',
+  isha: '20:25',
+}
+
+const prayerLabels = {
+  fajr: 'الفجر',
+  dhuhr: 'الظهر',
+  asr: 'العصر',
+  maghrib: 'المغرب',
+  isha: 'العشاء',
+}
+
+function getPrayerState(date, prayerTimes = defaultPrayerTimes) {
+  const current = date.getHours() * 60 + date.getMinutes()
+  const entries = Object.entries(prayerTimes).map(([key, time]) => ({
+    key,
+    label: prayerLabels[key],
+    minutes: timeToMinutes(time),
+    time,
+  }))
+  let next = entries.find(p => p.minutes >= current)
+  let tomorrow = false
+  if (!next) {
+    next = entries[0]
+    tomorrow = true
+  }
+  const diff = tomorrow ? (24 * 60 - current) + next.minutes : next.minutes - current
+  return {
+    next,
+    diff,
+    status: diff <= 20 ? 'قريب جدًا' : diff <= 60 ? 'قريب' : 'مستقر',
+    message: diff <= 20
+      ? `اقترب وقت ${next.label}. خفف الانتقال واستعد.`
+      : diff <= 60
+        ? `تبقى أقل من ساعة على ${next.label}.`
+        : `الصلاة القادمة: ${next.label}`,
+  }
+}
+
 function getPhase(level) {
   if (level >= 31) return 'الأداء العالي'
   if (level >= 21) return 'النمو المهني'
@@ -205,11 +260,33 @@ export default function App() {
   const [energyInput, setEnergyInput] = useState(50)
   const [sleepHours, setSleepHours] = useState(5)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const [focusActive, setFocusActive] = useState(false)
+  const [focusSeconds, setFocusSeconds] = useState(25 * 60)
+  const [focusTask, setFocusTask] = useState('جلسة تركيز مهنية')
+  const [prayerDone, setPrayerDone] = useState({})
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
+
+
+  useEffect(() => {
+    if (!focusActive) return
+    const timer = setInterval(() => {
+      setFocusSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          setFocusActive(false)
+          addXP(60, focusTask)
+          notify('تمت جلسة التركيز')
+          return 25 * 60
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [focusActive, focusTask])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setLoading(false) })
@@ -315,6 +392,7 @@ export default function App() {
       time_state: timeState?.key,
       daily_report: dailyReport,
       checks,
+      prayer_status: prayerDone,
       updated_at: new Date().toISOString(),
       ...extra
     }, { onConflict: 'user_id,log_date' })
@@ -331,12 +409,14 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ascend-checks-' + todayKey(), JSON.stringify(checks)) }, [checks])
   useEffect(() => { localStorage.setItem('ascend-career-skills', JSON.stringify(completedSkills)) }, [completedSkills])
   useEffect(() => { localStorage.setItem('ascend-career-projects', JSON.stringify(completedProjects)) }, [completedProjects])
+  useEffect(() => { localStorage.setItem('ascend-prayer-' + todayKey(), JSON.stringify(prayerDone)) }, [prayerDone])
   useEffect(() => { localStorage.setItem('ascend-energy-input', String(energyInput)) }, [energyInput])
   useEffect(() => { localStorage.setItem('ascend-sleep-hours', String(sleepHours)) }, [sleepHours])
   useEffect(() => { saveProfileCloud(profile) }, [profile])
   useEffect(() => { saveDailyLogCloud() }, [checks, energyInput, sleepHours, dailyReport])
 
   const timeState = useMemo(() => getTimeState(now), [now])
+  const prayerState = useMemo(() => getPrayerState(now), [now])
   const timeline = useMemo(() => getTimeline(), [])
   const plan = useMemo(() => buildTodayPlan(profile, checks, timeState), [profile, checks, timeState])
   const xpNeed = 500 + profile.level * 120
@@ -358,6 +438,26 @@ export default function App() {
 
   function notify(text) { setToast(text); setTimeout(() => setToast(''), 2200) }
 
+
+  function startFocus(minutes = 25, task = plan.mission.title) {
+    setFocusTask(task)
+    setFocusSeconds(minutes * 60)
+    setFocusActive(true)
+    notify('بدأ وضع التركيز')
+  }
+
+  function stopFocus() {
+    setFocusActive(false)
+    setFocusSeconds(25 * 60)
+    notify('تم إيقاف وضع التركيز')
+  }
+
+  function confirmPrayer(key) {
+    setPrayerDone(prev => ({ ...prev, [key]: true }))
+    setProfile(prev => ({ ...prev, momentum: Math.min(100, prev.momentum + 3) }))
+    notify(`تم تأكيد صلاة ${prayerLabels[key]}`)
+  }
+
   async function enableNotifications() {
     if (!('Notification' in window)) {
       notify('المتصفح لا يدعم الإشعارات')
@@ -375,7 +475,7 @@ export default function App() {
 
   function sendTestNotification() {
     if (Notification.permission === 'granted') {
-      new Notification('Ascend', { body: timeState.key === 'deep' ? 'نافذة التركيز العميق نشطة الآن.' : 'النظام يعمل ويتابع حالة اليوم.' })
+      new Notification('Ascend', { body: prayerState.diff <= 60 ? prayerState.message : (timeState.key === 'deep' ? 'نافذة التركيز العميق نشطة الآن.' : 'النظام يعمل ويتابع حالة اليوم.') })
     } else {
       notify('فعّل الإشعارات أولًا')
     }
@@ -483,6 +583,18 @@ export default function App() {
     return (
       <main className="auth-screen">
         {toast && <div className="toast">{toast}</div>}
+
+      {focusActive && (
+        <section className="focus-overlay">
+          <div className="focus-panel">
+            <p className="kicker">وضع التركيز</p>
+            <h2>{focusTask}</h2>
+            <strong>{minutesToText(focusSeconds)}</strong>
+            <p>مهمة واحدة فقط. لا تنتقل لشيء آخر حتى ينتهي المؤقت.</p>
+            <button onClick={stopFocus}>إنهاء الجلسة</button>
+          </div>
+        </section>
+      )}
         <form className="auth-card" onSubmit={signIn}>
           <div className="logo">A</div>
           <p className="kicker">نظام التشغيل الشخصي</p>
@@ -540,6 +652,33 @@ export default function App() {
                 </div>
               ))}
             </div>
+            <div className="card prayer-engine-card">
+              <p className="kicker">محور الصلاة</p>
+              <h3>{prayerState.message}</h3>
+              <p className="muted">الوقت القادم: {prayerState.next.time} · الحالة: {prayerState.status}</p>
+              <div className="prayer-row">
+                {Object.entries(defaultPrayerTimes).map(([key, time]) => (
+                  <button
+                    key={key}
+                    className={prayerDone[key] ? 'prayer-done' : 'secondary'}
+                    onClick={() => confirmPrayer(key)}
+                  >
+                    {prayerLabels[key]} {prayerDone[key] ? '✓' : time}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="card focus-card">
+              <p className="kicker">وضع التركيز</p>
+              <h3>ابدأ جلسة مهنية بدون تشتيت</h3>
+              <p className="muted">الأفضل استخدامها في نافذة التركيز العميق صباحًا.</p>
+              <div className="button-row">
+                <button onClick={() => startFocus(25)}>25 دقيقة</button>
+                <button className="secondary" onClick={() => startFocus(50)}>50 دقيقة</button>
+              </div>
+            </div>
+
             <div className="card daily-core">
               <p className="kicker">الأساسيات اليومية</p>
               {plan.core.map(item => (

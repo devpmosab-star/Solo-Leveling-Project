@@ -155,3 +155,25 @@ body{direction:rtl}.card{text-align:right}.clock{text-align:left}.auth-card{text
 
 .cloud-status{padding:10px 12px;border-radius:12px;background:rgba(125,255,178,.08);border:1px solid rgba(125,255,178,.18);color:#dfffea;font-weight:900;font-size:12px;white-space:nowrap}
 @media(max-width:860px){.cloud-status{width:max-content}}
+
+/* PRAYER ENGINE + FOCUS MODE + MOBILE CORE */
+.prayer-engine-card{border-color:rgba(255,209,102,.28)}
+.prayer-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.prayer-row button{padding:10px 12px;font-size:13px}
+.prayer-done{background:linear-gradient(135deg,#16a34a,#6ee7ff)!important}
+.focus-card{border-color:rgba(110,231,255,.28)}
+.focus-overlay{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(3,6,14,.86);backdrop-filter:blur(14px);padding:22px}
+.focus-panel{width:min(680px,96vw);min-height:420px;border-radius:34px;border:1px solid rgba(110,231,255,.28);background:linear-gradient(135deg,rgba(13,18,34,.96),rgba(5,8,18,.95));box-shadow:0 30px 120px rgba(0,0,0,.55);display:grid;place-items:center;align-content:center;text-align:center;padding:34px}
+.focus-panel h2{font-size:clamp(32px,7vw,66px);margin:8px 0}
+.focus-panel strong{font-size:clamp(70px,16vw,150px);line-height:.9;color:#6ee7ff;text-shadow:0 0 45px rgba(110,231,255,.22)}
+.focus-panel p{color:var(--muted);max-width:520px}
+@media(max-width:860px){
+  .app{width:100%;padding:12px 12px 88px}
+  .topbar{border-radius:22px}
+  .hero{padding:22px;border-radius:26px}
+  .card{border-radius:22px;padding:18px}
+  .nav{position:fixed;right:10px;left:10px;bottom:10px;z-index:50;background:rgba(8,12,24,.88);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);padding:8px;border-radius:22px;justify-content:space-between;margin:0}
+  .nav button{flex:1;padding:11px 8px;font-size:12px}
+  .level-card strong{font-size:60px}
+  .prayer-row button{flex:1}
+}
