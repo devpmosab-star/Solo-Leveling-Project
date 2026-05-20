@@ -7,6 +7,27 @@ const careerTracks = [
   { key: 'bms', name: 'BMS / أتمتة المباني', progress: 5, next: 'نظرة عامة على نظام BMS' },
 ]
 
+
+const careerSkills = [
+  { id: 'electrical-basics', title: 'أساسيات الكهرباء العملية', track: 'عام', level: 1, status: 'open', desc: 'فهم الأحمال، اللوحات، الحماية، والمخططات الأساسية.' },
+  { id: 'control-drawings', title: 'مخططات التحكم الكهربائي', track: 'عام', level: 1, status: 'open', desc: 'قراءة وفهم دوائر التحكم، الرموز، والتوصيلات.' },
+  { id: 'plc-io', title: 'PLC Inputs / Outputs', track: 'PLC', level: 1, status: 'open', desc: 'فهم المدخلات والمخرجات وعلاقة الحساسات والمشغلات بالـ PLC.' },
+  { id: 'ladder', title: 'Ladder Logic', track: 'PLC', level: 2, status: 'locked', desc: 'بناء منطق تشغيل وإيقاف وتتابع بسيط.' },
+  { id: 'timers-counters', title: 'Timers & Counters', track: 'PLC', level: 2, status: 'locked', desc: 'استخدام المؤقتات والعدادات في سيناريوهات صناعية.' },
+  { id: 'hmi-basics', title: 'HMI Basics', track: 'SCADA', level: 2, status: 'locked', desc: 'تصميم شاشة تحكم بسيطة لمراقبة وتشغيل النظام.' },
+  { id: 'scada-alarms', title: 'SCADA Alarms', track: 'SCADA', level: 3, status: 'locked', desc: 'فهم التنبيهات، البيانات، وشاشات المراقبة.' },
+  { id: 'bms-overview', title: 'BMS Overview', track: 'BMS', level: 1, status: 'open', desc: 'فهم أنظمة المباني الذكية، HVAC، الإضاءة، والطاقة.' },
+  { id: 'hvac-controls', title: 'HVAC Controls', track: 'BMS', level: 3, status: 'locked', desc: 'فهم التحكم بالتكييف والتهوية داخل المباني.' },
+]
+
+const careerProjects = [
+  { id: 'p1', title: 'مشروع Start / Stop Motor', level: 1, track: 'PLC', xp: 250, status: 'open', desc: 'محاكاة تشغيل وإيقاف محرك مع حماية بسيطة.' },
+  { id: 'p2', title: 'مشروع Tank Level Control', level: 2, track: 'PLC + SCADA', xp: 420, status: 'locked', desc: 'نظام خزان ماء بحساسات مستوى وتشغيل مضخة.' },
+  { id: 'p3', title: 'مشروع SCADA Dashboard', level: 3, track: 'SCADA', xp: 500, status: 'locked', desc: 'واجهة مراقبة بسيطة تعرض الحالة والتنبيهات.' },
+  { id: 'p4', title: 'مشروع BMS Room Control', level: 3, track: 'BMS', xp: 520, status: 'locked', desc: 'تحكم مبسط في غرفة: تكييف، إضاءة، وحساسات.' },
+]
+
+
 const foundationMissions = [
   { title: 'أساسيات PLC: المدخلات والمخرجات', reason: 'أول أساس عملي مهم لمقابلات الأتمتة.', duration: '60–90 min', xp: 120, type: 'المسار المهني' },
   { title: 'Watch one تجربة شاشة SCADA', reason: 'لفهم شكل شاشات المراقبة والتحكم في العمل الحقيقي.', duration: '30–45 min', xp: 70, type: 'المسار المهني' },
@@ -173,6 +194,8 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [now, setNow] = useState(new Date())
   const [view, setView] = useState('home')
+  const [completedSkills, setCompletedSkills] = useState([])
+  const [completedProjects, setCompletedProjects] = useState([])
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000)
@@ -196,6 +219,8 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem('ascend-profile', JSON.stringify(profile)) }, [profile])
   useEffect(() => { localStorage.setItem('ascend-checks-' + todayKey(), JSON.stringify(checks)) }, [checks])
+  useEffect(() => { localStorage.setItem('ascend-career-skills', JSON.stringify(completedSkills)) }, [completedSkills])
+  useEffect(() => { localStorage.setItem('ascend-career-projects', JSON.stringify(completedProjects)) }, [completedProjects])
 
   const timeState = useMemo(() => getTimeState(now), [now])
   const timeline = useMemo(() => getTimeline(), [])
@@ -203,6 +228,17 @@ export default function App() {
   const xpNeed = 500 + profile.level * 120
   const xpPercent = Math.min(100, Math.round((profile.xp / xpNeed) * 100))
   const momentumStatus = getMomentumStatus(profile.momentum)
+  const unlockedSkills = careerSkills.map(skill => ({
+    ...skill,
+    completed: completedSkills.includes(skill.id),
+    available: skill.status === 'open' || profile.level >= skill.level * 3
+  }))
+  const unlockedProjects = careerProjects.map(project => ({
+    ...project,
+    completed: completedProjects.includes(project.id),
+    available: project.status === 'open' || profile.level >= project.level * 4
+  }))
+  const careerProgressValue = Math.round(((completedSkills.length + completedProjects.length * 2) / (careerSkills.length + careerProjects.length * 2)) * 100)
 
   function notify(text) { setToast(text); setTimeout(() => setToast(''), 2200) }
 
@@ -250,6 +286,28 @@ export default function App() {
     notify(`تم إنجاز: ${label}`)
   }
 
+  function completeSkill(skill) {
+    if (!skill.available || completedSkills.includes(skill.id)) return
+    setCompletedSkills(prev => [...prev, skill.id])
+    addXP(90 + skill.level * 35, skill.title)
+    setProfile(prev => ({
+      ...prev,
+      professionalValue: Math.min(100, prev.professionalValue + 4),
+      focus: Math.min(100, prev.focus + 2)
+    }))
+  }
+
+  function completeProject(project) {
+    if (!project.available || completedProjects.includes(project.id)) return
+    setCompletedProjects(prev => [...prev, project.id])
+    addXP(project.xp, project.title)
+    setProfile(prev => ({
+      ...prev,
+      professionalValue: Math.min(100, prev.professionalValue + 10),
+      momentum: Math.min(100, prev.momentum + 8)
+    }))
+  }
+
   function missedPrayerRecovery() {
     notify('تمت إضافة إجراء استعادة: نافلة أو لحظة هدوء ومراجعة')
     setProfile(prev => ({ ...prev, momentum: Math.max(0, prev.momentum - 8) }))
@@ -291,6 +349,7 @@ export default function App() {
       <nav className="nav">
         <button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}>الرئيسية</button>
         <button className={view === 'career' ? 'active' : ''} onClick={() => setView('career')}>المسار المهني</button>
+        <button className={view === 'skills' ? 'active' : ''} onClick={() => setView('skills')}>المهارات والمشاريع</button>
         <button className={view === 'analytics' ? 'active' : ''} onClick={() => setView('analytics')}>الإحصائيات</button>
       </nav>
 
@@ -334,10 +393,55 @@ export default function App() {
 
       {view === 'career' && (
         <section className="grid">
-          <div className="card wide"><p className="kicker">الخطة المهنية — المرحلة الأولى</p><h3>الأتمتة + السكادا + أنظمة المباني الذكية</h3><p className="muted">الهدف الحالي هو بناء أساس قابل للتوظيف، مشاريع بسيطة للملف المهني، والاستعداد لمقابلات المبتدئين.</p></div>
+          <div className="card wide"><p className="kicker">الخطة المهنية — المرحلة الأولى</p><h3>الأتمتة + السكادا + أنظمة المباني الذكية</h3><p className="muted">الهدف الحالي هو بناء أساس قابل للتوظيف، مشاريع بسيطة للملف المهني، والاستعداد لمقابلات المبتدئين.</p>
+            <div className="bar big"><div style={{ width: `${careerProgressValue}%` }} /></div>
+            <p className="muted">جاهزية مهنية مبدئية: {careerProgressValue}%</p>
+          </div>
           <div className="tracks">
             {careerTracks.map(track => (
               <div className="card track" key={track.key}><h3>{track.name}</h3><div className="bar"><div style={{ width: `${track.progress}%` }} /></div><p>التقدم: {track.progress}%</p><small>التالي: {track.next}</small></div>
+            ))}
+          </div>
+        </section>
+      )}
+
+
+      {view === 'skills' && (
+        <section className="grid">
+          <div className="card wide">
+            <p className="kicker">شجرة المهارات المهنية</p>
+            <h3>افتح المهارات بالتدرج حسب المستوى والتقدم</h3>
+            <p className="muted">هذه ليست قائمة عشوائية. كل مهارة هنا تخدم هدف الدخول إلى مجال Automation / SCADA / BMS.</p>
+          </div>
+
+          <div className="skill-grid">
+            {unlockedSkills.map(skill => (
+              <div className={'card skill-node ' + (skill.completed ? 'completed' : '') + (!skill.available ? ' locked' : '')} key={skill.id}>
+                <span>{skill.track} · Level {skill.level}</span>
+                <h3>{skill.title}</h3>
+                <p>{skill.desc}</p>
+                <button disabled={!skill.available || skill.completed} onClick={() => completeSkill(skill)}>
+                  {skill.completed ? 'تم الإتقان' : skill.available ? 'إكمال المهارة' : 'مقفلة'}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="card wide">
+            <p className="kicker">المشاريع العملية</p>
+            <h3>المشاريع هي أقوى دليل على جاهزيتك للمقابلات</h3>
+          </div>
+
+          <div className="skill-grid">
+            {unlockedProjects.map(project => (
+              <div className={'card project-node ' + (project.completed ? 'completed' : '') + (!project.available ? ' locked' : '')} key={project.id}>
+                <span>{project.track} · +{project.xp} XP</span>
+                <h3>{project.title}</h3>
+                <p>{project.desc}</p>
+                <button disabled={!project.available || project.completed} onClick={() => completeProject(project)}>
+                  {project.completed ? 'تم المشروع' : project.available ? 'إنهاء المشروع' : 'مقفول'}
+                </button>
+              </div>
             ))}
           </div>
         </section>
