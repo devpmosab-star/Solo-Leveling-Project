@@ -1,8 +1,9 @@
 {
-  "name": "Solo Leveling Cloud Hunter System",
-  "short_name": "Hunter",
+  "name": "Ascend Personal Operating System",
+  "short_name": "Ascend",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#03020a",
-  "theme_color": "#03020a"
+  "background_color": "#060914",
+  "theme_color": "#060914",
+  "icons": []
 }
