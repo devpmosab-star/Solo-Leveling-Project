@@ -427,10 +427,56 @@ export default function App() {
     await supabase.auth.signOut()
   }
 
+
+  async function loadPrayerEvents(userId) {
+    const { data, error } = await supabase
+      .from('ascend_prayer_events')
+      .select('prayer_key, completed')
+      .eq('user_id', userId)
+      .eq('prayer_date', todayKey())
+
+    if (error) {
+      console.error('Prayer load error:', error)
+      return {}
+    }
+
+    const status = {}
+    ;(data || []).forEach(row => {
+      if (row.completed) status[row.prayer_key] = true
+    })
+
+    localStorage.setItem('ascend-prayer-status-' + todayKey(), JSON.stringify(status))
+    return status
+  }
+
+  async function savePrayerEvent(userId, key, label) {
+    const { error } = await supabase
+      .from('ascend_prayer_events')
+      .upsert({
+        user_id: userId,
+        prayer_date: todayKey(),
+        prayer_key: key,
+        prayer_label: label,
+        completed: true,
+        completed_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,prayer_date,prayer_key' })
+
+    if (error) {
+      console.error('Prayer save error:', error)
+      notify('لم يتم حفظ الصلاة في السحابة')
+      return false
+    }
+
+    return true
+  }
+
   async function loadCloudData() {
     setCloudReady(false)
     const user = (await supabase.auth.getUser()).data.user
     if (!user) return
+
+    const prayerEventsStatus = await loadPrayerEvents(user.id)
+    setPrayerStatus(prayerEventsStatus)
 
     let { data: cloudProfile } = await supabase.from('ascend_profiles').select('*').eq('id', user.id).maybeSingle()
     if (!cloudProfile) {
@@ -464,7 +510,7 @@ export default function App() {
       setEnergyInput(log.energy_input ?? 50)
       setSleepHours(Number(log.sleep_hours ?? 5))
       setCompletedOrders(log.completed_orders || {})
-      setPrayerStatus(log.prayer_status || {})
+      // Prayer status now loads from ascend_prayer_events only.
     } else {
       await supabase.from('ascend_daily_logs').insert({
         user_id: user.id,
@@ -559,28 +605,24 @@ export default function App() {
 
   async function confirmCurrentPrayer() {
     const key = prayerWindow.current.key
-    const nextPrayerStatus = { ...prayerStatus, [key]: true }
+    const label = prayerWindow.current.label
+
+    const nextPrayerStatus = { ...(prayerStatus || {}), [key]: true }
+
     setPrayerStatus(nextPrayerStatus)
+    localStorage.setItem('ascend-prayer-status-' + todayKey(), JSON.stringify(nextPrayerStatus))
     setProfile(prev => ({ ...prev, momentum: Math.min(100, prev.momentum + 3) }))
 
     const user = (await supabase.auth.getUser()).data.user
     if (user) {
-      await supabase.from('ascend_daily_logs').upsert({
-        user_id: user.id,
-        log_date: todayKey(),
-        energy_input: energyInput,
-        sleep_hours: sleepHours,
-        readiness,
-        current_prayer: key,
-        prayer_status: nextPrayerStatus,
-        orders: todayOrders,
-        completed_orders: completedOrders,
-        daily_state: timeState.key,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,log_date' })
+      const saved = await savePrayerEvent(user.id, key, label)
+      if (saved) {
+        const verified = await loadPrayerEvents(user.id)
+        setPrayerStatus(verified)
+      }
     }
 
-    notify(`تم تسجيل صلاة ${prayerWindow.current.label}`)
+    notify(`تم تسجيل صلاة ${label}`)
   }
 
   function startFocus(order, minutes = 25) {
@@ -649,6 +691,7 @@ export default function App() {
       }, { onConflict: 'user_id,log_date' })
 
       await supabase.from('ascend_career_progress').delete().eq('user_id', user.id)
+      await supabase.from('ascend_prayer_events').delete().eq('user_id', user.id).eq('prayer_date', todayKey())
     }
 
     notify('تم تصفير بيانات التجربة')
@@ -886,6 +929,12 @@ export default function App() {
             <p className="kicker">الجاهزية المحسوبة</p>
             <h3>{readiness}%</h3>
             <div className="bar big"><div style={{ width: `${readiness}%` }} /></div>
+          </div>
+
+          <div className="card">
+            <p className="kicker">فحص حفظ الصلاة</p>
+            <h3>{prayerStatus[prayerWindow.current.key] ? 'محفوظة' : 'غير مسجلة'}</h3>
+            <p className="muted">الحفظ الآن يتم في جدول مستقل: ascend_prayer_events.</p>
           </div>
 
           <div className="card danger-card">
