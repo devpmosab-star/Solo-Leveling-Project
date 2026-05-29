@@ -1,0 +1,2 @@
+import { secondsText } from '../utils/timeEngine'
+export default function FocusOverlay({active,task,seconds,onStop}){if(!active)return null;return <section className="focus-overlay"><div className="focus-panel"><p className="kicker">وضع التركيز</p><h2>{task}</h2><strong>{secondsText(seconds)}</strong><p>مهمة واحدة فقط. لا تنتقل لشيء آخر الآن.</p><button onClick={onStop}>إنهاء الجلسة</button></div></section>}

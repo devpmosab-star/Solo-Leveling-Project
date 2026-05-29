@@ -1,0 +1,2 @@
+import { formatDate, formatTime } from '../utils/timeEngine'
+export default function Header({profile,now,cloudReady,onSignOut}){return <header className="topbar"><div className="brand"><div className="logo small">A</div><div><p>ASCEND V3.1</p><h1>{profile.name} · {profile.phase}</h1></div></div><div className="clock"><b>{formatTime(now)}</b><span>{formatDate(now)}</span></div><div className="cloud">{cloudReady?'محفوظ':'مزامنة...'}</div><button className="secondary" onClick={onSignOut}>خروج</button></header>}
