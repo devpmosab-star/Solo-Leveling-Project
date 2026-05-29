@@ -1,4 +1,0 @@
-import { supabase } from '../supabaseClient'
-import { todayKey } from '../utils/timeEngine'
-export async function loadPrayerEvents(userId){const {data,error}=await supabase.from('ascend_prayer_events').select('prayer_key, completed').eq('user_id',userId).eq('prayer_date',todayKey());if(error){console.error(error);return{}}const s={};(data||[]).forEach(r=>{if(r.completed)s[r.prayer_key]=true});localStorage.setItem('ascend-prayer-status-'+todayKey(),JSON.stringify(s));return s}
-export async function savePrayerEvent(userId,key,label){const {error}=await supabase.from('ascend_prayer_events').upsert({user_id:userId,prayer_date:todayKey(),prayer_key:key,prayer_label:label,completed:true,completed_at:new Date().toISOString()},{onConflict:'user_id,prayer_date,prayer_key'});if(error){console.error(error);return false}return true}
