@@ -1,9 +1,10 @@
 {
-  "name": "Ascend نظام التشغيل الشخصي",
+  "name": "Ascend - نظام التشغيل الشخصي",
   "short_name": "Ascend",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#060914",
-  "theme_color": "#060914",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "orientation": "portrait",
   "icons": []
 }
