@@ -1,4 +1,0 @@
-export const defaultProfile={name:'مصعب',level:1,xp:0,phase:'مرحلة التأسيس',momentum:55,focus:50,energy:50,professionalValue:5}
-export function getPhase(level){if(level>=31)return'الأداء العالي';if(level>=21)return'النمو المهني';if(level>=11)return'الانضباط';return'مرحلة التأسيس'}
-export function energyFromSleep(h){if(h>=8)return 95;if(h>=7)return 85;if(h>=6)return 70;if(h>=5)return 55;if(h>=4)return 38;return 25}
-export function applyXP(profile,amount,label=''){if(!amount)return profile;let xp=profile.xp+amount,level=profile.level,need=500+level*120,momentum=Math.min(100,profile.momentum+5),focus=Math.min(100,profile.focus+2),professionalValue=Math.min(100,profile.professionalValue+(label.includes('PLC')||label.includes('مهني')?2:1));while(xp>=need){xp-=need;level++;need=500+level*120;momentum=Math.min(100,momentum+8)}return{...profile,xp,level,phase:getPhase(level),momentum,focus,professionalValue}}
