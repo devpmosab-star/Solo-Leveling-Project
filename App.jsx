@@ -33,14 +33,114 @@ const prayerLabels = {
 }
 
 const careerItems = [
-  { id: 'plc-io', type: 'skill', title: 'PLC Inputs / Outputs', track: 'PLC', weight: 10 },
-  { id: 'drawings', type: 'skill', title: 'مخططات التحكم الكهربائي', track: 'Electrical', weight: 10 },
-  { id: 'ladder', type: 'skill', title: 'Ladder Logic', track: 'PLC', weight: 15 },
-  { id: 'hmi', type: 'skill', title: 'HMI Basics', track: 'SCADA', weight: 15 },
-  { id: 'bms-overview', type: 'skill', title: 'BMS Overview', track: 'BMS', weight: 10 },
-  { id: 'project-motor', type: 'project', title: 'مشروع Start / Stop Motor', track: 'PLC', weight: 20 },
-  { id: 'project-tank', type: 'project', title: 'مشروع Tank Level Control', track: 'PLC + SCADA', weight: 30 },
-  { id: 'project-scada', type: 'project', title: 'مشروع SCADA Dashboard', track: 'SCADA', weight: 30 },
+  {
+    id: 'industrial-electrical-basics',
+    type: 'skill',
+    stage: 1,
+    title: 'أساسيات الكهرباء الصناعية',
+    track: 'Foundation',
+    weight: 8,
+    guide: 'افهم الفرق بين الأحمال، القواطع، الكونتاكتور، الريليه، والحماية الأساسية.',
+  },
+  {
+    id: 'control-components',
+    type: 'skill',
+    stage: 1,
+    title: 'مكونات دوائر التحكم',
+    track: 'Foundation',
+    weight: 8,
+    guide: 'تعرف على Push Buttons, Relays, Contactors, Overload, Sensors.',
+  },
+  {
+    id: 'control-drawings',
+    type: 'skill',
+    stage: 1,
+    title: 'قراءة مخططات التحكم الكهربائي',
+    track: 'Foundation',
+    weight: 12,
+    guide: 'تعلم قراءة الرموز والتوصيلات ومسار الإشارة داخل لوحة التحكم.',
+  },
+  {
+    id: 'plc-concept',
+    type: 'skill',
+    stage: 2,
+    title: 'مفهوم PLC',
+    track: 'PLC',
+    weight: 8,
+    guide: 'افهم لماذا نستخدم PLC وكيف يقرأ المدخلات ويتحكم بالمخرجات.',
+  },
+  {
+    id: 'plc-io',
+    type: 'skill',
+    stage: 2,
+    title: 'PLC Inputs / Outputs',
+    track: 'PLC',
+    weight: 10,
+    guide: 'اربط بين الحساسات والمفاتيح كمداخل، والمحركات واللمبات كمخرجات.',
+  },
+  {
+    id: 'ladder-logic',
+    type: 'skill',
+    stage: 2,
+    title: 'Ladder Logic Basics',
+    track: 'PLC',
+    weight: 14,
+    guide: 'ابدأ بمنطق Start/Stop و Seal-in circuit قبل أي شيء متقدم.',
+  },
+  {
+    id: 'project-start-stop',
+    type: 'project',
+    stage: 3,
+    title: 'مشروع Start / Stop Motor',
+    track: 'PLC Project',
+    weight: 18,
+    guide: 'ابنِ أول مشروع محاكاة لمحرك يعمل ويتوقف مع حماية بسيطة.',
+  },
+  {
+    id: 'project-tank',
+    type: 'project',
+    stage: 3,
+    title: 'مشروع Tank Level Control',
+    track: 'PLC Project',
+    weight: 22,
+    guide: 'نظام خزان ماء بحساس مستوى وتشغيل مضخة، ممتاز للـ Portfolio.',
+  },
+  {
+    id: 'hmi-basics',
+    type: 'skill',
+    stage: 4,
+    title: 'HMI / SCADA Basics',
+    track: 'SCADA',
+    weight: 12,
+    guide: 'افهم كيف تظهر حالة النظام على شاشة مراقبة وتحكم.',
+  },
+  {
+    id: 'scada-dashboard',
+    type: 'project',
+    stage: 4,
+    title: 'مشروع SCADA Dashboard',
+    track: 'SCADA Project',
+    weight: 22,
+    guide: 'صمم شاشة تعرض حالة المضخة، مستوى الخزان، والتنبيهات.',
+  },
+  {
+    id: 'bms-overview',
+    type: 'skill',
+    stage: 5,
+    title: 'BMS / Building Automation Overview',
+    track: 'BMS',
+    weight: 10,
+    guide: 'افهم أنظمة المباني: HVAC, Lighting, Sensors, Energy Monitoring.',
+  },
+  {
+    id: 'interview-prep',
+    type: 'career',
+    stage: 6,
+    title: 'تحضير مقابلات Junior Automation',
+    track: 'Career',
+    weight: 18,
+    guide: 'جهز شرح مشاريعك، أساسيات PLC، والمخططات، وأسئلة المقابلات.',
+  },
 ]
 
 function todayKey() {
@@ -125,15 +225,15 @@ function getPhase(level) {
   return 'مرحلة التأسيس'
 }
 
-function createOrders({ timeState, readiness, careerReadiness, prayerWindow }) {
+function createOrders({ timeState, readiness, careerReadiness, prayerWindow, nextCareerItem }) {
   const orders = []
 
   if (timeState.key === 'deep' && readiness >= 45) {
     orders.push({
       id: 'career-deep',
-      title: careerReadiness < 20 ? 'تعلم أساسيات PLC: المدخلات والمخرجات' : 'تقدم في مشروع مهني بسيط',
+      title: nextCareerItem ? nextCareerItem.title : (careerReadiness < 20 ? 'تعلم أساسيات PLC: المدخلات والمخرجات' : 'تقدم في مشروع مهني بسيط'),
       duration: readiness >= 70 ? '60 دقيقة' : '35 دقيقة',
-      reason: 'هذه أفضل نافذة للتقدم المهني قبل الدوام.',
+      reason: nextCareerItem ? nextCareerItem.guide : 'هذه أفضل نافذة للتقدم المهني قبل الدوام.',
       xp: readiness >= 70 ? 120 : 70,
       type: 'career',
     })
@@ -209,6 +309,27 @@ function createOrders({ timeState, readiness, careerReadiness, prayerWindow }) {
   return orders.slice(0, 4)
 }
 
+
+function isCareerItemAvailable(item, completedCareer) {
+  if (item.stage === 1) return true
+  const previousStageItems = careerItems.filter(x => x.stage < item.stage)
+  const completedPrevious = previousStageItems.filter(x => completedCareer.includes(x.id))
+  return completedPrevious.length >= Math.ceil(previousStageItems.length * 0.65)
+}
+
+function getNextCareerItem(completedCareer) {
+  return careerItems.find(item => !completedCareer.includes(item.id) && isCareerItemAvailable(item, completedCareer)) || null
+}
+
+function energyFromSleep(hours) {
+  if (hours >= 8) return 95
+  if (hours >= 7) return 85
+  if (hours >= 6) return 70
+  if (hours >= 5) return 55
+  if (hours >= 4) return 38
+  return 25
+}
+
 export default function App() {
   const [session, setSession] = useState(null)
   const [authMode, setAuthMode] = useState('login')
@@ -236,11 +357,12 @@ export default function App() {
     const done = careerItems.filter(x => completedCareer.includes(x.id)).reduce((a, x) => a + x.weight, 0)
     return Math.round((done / total) * 100)
   }, [completedCareer])
-  const adjustedEnergy = Math.max(0, Math.min(100, Math.round((energyInput * 0.65) + (sleepHours >= 7 ? 25 : sleepHours >= 5 ? 10 : -5))))
+  const nextCareerItem = useMemo(() => getNextCareerItem(completedCareer), [completedCareer])
+  const adjustedEnergy = energyFromSleep(sleepHours)
   const readiness = Math.round((profile.momentum + adjustedEnergy + profile.focus + profile.professionalValue) / 4)
   const todayOrders = useMemo(
-    () => createOrders({ timeState, readiness, careerReadiness, prayerWindow }),
-    [timeState, readiness, careerReadiness, prayerWindow]
+    () => createOrders({ timeState, readiness, careerReadiness, prayerWindow, nextCareerItem }),
+    [timeState, readiness, careerReadiness, prayerWindow, nextCareerItem]
   )
   const xpNeed = 500 + profile.level * 120
   const xpPercent = Math.min(100, Math.round((profile.xp / xpNeed) * 100))
@@ -435,10 +557,29 @@ export default function App() {
     }
   }
 
-  function confirmCurrentPrayer() {
+  async function confirmCurrentPrayer() {
     const key = prayerWindow.current.key
-    setPrayerStatus(prev => ({ ...prev, [key]: true }))
+    const nextPrayerStatus = { ...prayerStatus, [key]: true }
+    setPrayerStatus(nextPrayerStatus)
     setProfile(prev => ({ ...prev, momentum: Math.min(100, prev.momentum + 3) }))
+
+    const user = (await supabase.auth.getUser()).data.user
+    if (user) {
+      await supabase.from('ascend_daily_logs').upsert({
+        user_id: user.id,
+        log_date: todayKey(),
+        energy_input: energyInput,
+        sleep_hours: sleepHours,
+        readiness,
+        current_prayer: key,
+        prayer_status: nextPrayerStatus,
+        orders: todayOrders,
+        completed_orders: completedOrders,
+        daily_state: timeState.key,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,log_date' })
+    }
+
     notify(`تم تسجيل صلاة ${prayerWindow.current.label}`)
   }
 
@@ -605,7 +746,7 @@ export default function App() {
               <h2>{timeState.title}</h2>
               <p>{timeState.priority}</p>
               <div className="hero-pills">
-                <span>جاهزية اليوم: {readiness}%</span>
+                <span>جاهزية اليوم: {readiness}%</span><span>الطاقة من النوم: {adjustedEnergy}%</span>
                 <span>الصلاة الحالية: {prayerWindow.current.label}</span>
                 <span>جاهزية الوظيفة: {careerReadiness}%</span>
                 <span>المستوى: {profile.level}</span>
@@ -690,15 +831,41 @@ export default function App() {
             <div className="bar big"><div style={{ width: `${careerReadiness}%` }} /></div>
             <p className="muted">الهدف: PLC + SCADA + BMS + مشاريع عملية + استعداد للمقابلات.</p>
           </div>
-          <div className="career-grid">
-            {careerItems.map(item => (
-              <div className={'card career-item ' + (completedCareer.includes(item.id) ? 'done' : '')} key={item.id}>
-                <span>{item.track} · {item.type === 'project' ? 'مشروع' : 'مهارة'}</span>
-                <h3>{item.title}</h3>
-                <p>وزن الجاهزية: {item.weight}</p>
-                <button onClick={() => completeCareerItem(item)}>{completedCareer.includes(item.id) ? 'تم' : 'إنجاز'}</button>
+          <div className="roadmap">
+            {[1,2,3,4,5,6].map(stage => (
+              <div className="roadmap-stage" key={stage}>
+                <h3>المرحلة {stage}</h3>
+                <div className="career-grid">
+                  {careerItems.filter(item => item.stage === stage).map(item => {
+                    const available = isCareerItemAvailable(item, completedCareer)
+                    const done = completedCareer.includes(item.id)
+                    return (
+                      <div className={'card career-item ' + (done ? 'done' : '') + (!available ? ' locked' : '')} key={item.id}>
+                        <span>{item.track} · {item.type === 'project' ? 'مشروع' : item.type === 'career' ? 'جاهزية' : 'مهارة'}</span>
+                        <h3>{item.title}</h3>
+                        <p>{item.guide}</p>
+                        <small>وزن الجاهزية: {item.weight}</small>
+                        <button disabled={!available || done} onClick={() => completeCareerItem(item)}>
+                          {done ? 'تم' : available ? 'إنجاز' : 'مقفلة'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             ))}
+          </div>
+
+          <div className="card wide locked-paths">
+            <p className="kicker">مسارات لاحقة</p>
+            <h3>مقفلة الآن لتجنب التشتت</h3>
+            <div className="locked-tags">
+              <span>الإنجليزية المهنية</span>
+              <span>اللياقة المتقدمة</span>
+              <span>الثقافة العامة</span>
+              <span>التواصل والثقة</span>
+              <span>مسار الشركة</span>
+            </div>
           </div>
         </section>
       )}
@@ -706,9 +873,9 @@ export default function App() {
       {view === 'settings' && (
         <section className="grid settings-grid">
           <div className="card">
-            <p className="kicker">الطاقة الحالية</p>
-            <h3>{energyInput}%</h3>
-            <input type="range" min="0" max="100" value={energyInput} onChange={e => setEnergyInput(Number(e.target.value))} />
+            <p className="kicker">الطاقة المحسوبة</p>
+            <h3>{adjustedEnergy}%</h3>
+            <p className="muted">النظام يحسب الطاقة تلقائيًا من ساعات النوم. لا تحتاج تحديدها يدويًا.</p>
           </div>
           <div className="card">
             <p className="kicker">ساعات النوم</p>
