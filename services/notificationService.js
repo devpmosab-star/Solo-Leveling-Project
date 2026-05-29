@@ -1,0 +1,1 @@
+export async function enableNotifications(){if(!('Notification'in window))return{ok:false,message:'المتصفح لا يدعم الإشعارات'};const p=await Notification.requestPermission();if(p==='granted'){new Notification('Ascend',{body:'تم تفعيل الإشعارات التجريبية.'});return{ok:true,message:'تم تفعيل الإشعارات'}}return{ok:false,message:'لم يتم تفعيل الإشعارات'}}
