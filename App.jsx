@@ -321,6 +321,82 @@ function getNextCareerItem(completedCareer) {
   return careerItems.find(item => !completedCareer.includes(item.id) && isCareerItemAvailable(item, completedCareer)) || null
 }
 
+
+const portfolioProjects = [
+  {
+    id: 'portfolio-start-stop',
+    title: 'PLC Start / Stop Motor',
+    track: 'PLC',
+    steps: ['الفكرة', 'المنطق', 'المحاكاة', 'التوثيق'],
+    relatedCareer: 'project-start-stop',
+  },
+  {
+    id: 'portfolio-tank',
+    title: 'Tank Level Control',
+    track: 'PLC + SCADA',
+    steps: ['الفكرة', 'PLC Logic', 'SCADA Screen', 'التوثيق'],
+    relatedCareer: 'project-tank',
+  },
+  {
+    id: 'portfolio-scada',
+    title: 'SCADA Dashboard',
+    track: 'SCADA',
+    steps: ['واجهة', 'Alarms', 'Trends', 'شرح المشروع'],
+    relatedCareer: 'scada-dashboard',
+  },
+]
+
+const timelineStages = [
+  { id: 'foundation', title: 'Foundation', subtitle: 'كهرباء صناعية + مخططات' },
+  { id: 'plc', title: 'PLC Basics', subtitle: 'IO + Ladder Logic' },
+  { id: 'projects', title: 'Projects', subtitle: 'Start/Stop + Tank Control' },
+  { id: 'scada', title: 'SCADA', subtitle: 'HMI + Dashboard' },
+  { id: 'interview', title: 'Interview', subtitle: 'شرح المشاريع والأساسيات' },
+  { id: 'job', title: 'Job Ready', subtitle: 'جاهزية أول وظيفة' },
+]
+
+function getCareerMissingItems(completedCareer) {
+  return careerItems.filter(item => !completedCareer.includes(item.id)).slice(0, 6)
+}
+
+function getTimelineActiveStage(careerReadiness) {
+  if (careerReadiness >= 85) return 'job'
+  if (careerReadiness >= 70) return 'interview'
+  if (careerReadiness >= 50) return 'scada'
+  if (careerReadiness >= 30) return 'projects'
+  if (careerReadiness >= 15) return 'plc'
+  return 'foundation'
+}
+
+function getWeeklyReview({ completedCareer, completedOrders, readiness, careerReadiness, profile }) {
+  const orderCount = Object.values(completedOrders || {}).filter(Boolean).length
+  const skillCount = careerItems.filter(item => completedCareer.includes(item.id) && item.type === 'skill').length
+  const projectCount = careerItems.filter(item => completedCareer.includes(item.id) && item.type === 'project').length
+
+  return {
+    title: careerReadiness >= 50 ? 'أسبوع تقدم مهني واضح' : orderCount >= 3 ? 'أسبوع بناء الزخم' : 'أسبوع تأسيس',
+    orderCount,
+    skillCount,
+    projectCount,
+    readiness,
+    careerReadiness,
+    level: profile.level,
+    advice: careerReadiness < 30
+      ? 'ركز على الأساسيات: الكهرباء الصناعية، المخططات، و PLC IO.'
+      : careerReadiness < 60
+        ? 'ابدأ تحويل التعلم إلى مشاريع صغيرة قابلة للعرض.'
+        : 'اقتربت من مرحلة المقابلات. ركز على شرح المشاريع بثقة.',
+  }
+}
+
+function getPortfolioProgress(project, completedCareer) {
+  const relatedDone = completedCareer.includes(project.relatedCareer)
+  if (relatedDone) return 100
+  const careerReadinessBase = completedCareer.length * 8
+  return Math.min(75, Math.max(0, careerReadinessBase))
+}
+
+
 function energyFromSleep(hours) {
   if (hours >= 8) return 95
   if (hours >= 7) return 85
@@ -360,6 +436,9 @@ export default function App() {
   const nextCareerItem = useMemo(() => getNextCareerItem(completedCareer), [completedCareer])
   const adjustedEnergy = energyFromSleep(sleepHours)
   const readiness = Math.round((profile.momentum + adjustedEnergy + profile.focus + profile.professionalValue) / 4)
+  const missingCareerItems = useMemo(() => getCareerMissingItems(completedCareer), [completedCareer])
+  const activeTimelineStage = useMemo(() => getTimelineActiveStage(careerReadiness), [careerReadiness])
+  const weeklyReview = useMemo(() => getWeeklyReview({ completedCareer, completedOrders, readiness, careerReadiness, profile }), [completedCareer, completedOrders, readiness, careerReadiness, profile])
   const todayOrders = useMemo(
     () => createOrders({ timeState, readiness, careerReadiness, prayerWindow, nextCareerItem }),
     [timeState, readiness, careerReadiness, prayerWindow, nextCareerItem]
@@ -763,7 +842,7 @@ export default function App() {
         <div className="brand">
           <div className="logo small">A</div>
           <div>
-            <p>ASCEND V2.1</p>
+            <p>ASCEND V3.0</p>
             <h1>{profile.name} · {profile.phase}</h1>
           </div>
         </div>
@@ -778,6 +857,9 @@ export default function App() {
       <nav className="nav">
         <button className={view === 'command' ? 'active' : ''} onClick={() => setView('command')}>اليوم</button>
         <button className={view === 'career' ? 'active' : ''} onClick={() => setView('career')}>المهنة</button>
+        <button className={view === 'portfolio' ? 'active' : ''} onClick={() => setView('portfolio')}>المشاريع</button>
+        <button className={view === 'review' ? 'active' : ''} onClick={() => setView('review')}>الأسبوع</button>
+        <button className={view === 'debug' ? 'active' : ''} onClick={() => setView('debug')}>فحص</button>
         <button className={view === 'settings' ? 'active' : ''} onClick={() => setView('settings')}>الإعدادات</button>
       </nav>
 
@@ -873,12 +955,30 @@ export default function App() {
             <h3>{careerReadiness}%</h3>
             <div className="bar big"><div style={{ width: `${careerReadiness}%` }} /></div>
             <p className="muted">الهدف: PLC + SCADA + BMS + مشاريع عملية + استعداد للمقابلات.</p>
+            <div className="missing-box">
+              <b>المتبقي الآن:</b>
+              {missingCareerItems.map(item => (
+                <span key={item.id}>☐ {item.title}</span>
+              ))}
+            </div>
           </div>
           <div className="roadmap">
             {[1,2,3,4,5,6].map(stage => (
               <div className="roadmap-stage" key={stage}>
                 <h3>المرحلة {stage}</h3>
-                <div className="career-grid">
+                <div className="card wide timeline-card-v3">
+            <p className="kicker">Career Timeline</p>
+            <div className="timeline-v3">
+              {timelineStages.map(stage => (
+                <div className={'timeline-step-v3 ' + (stage.id === activeTimelineStage ? 'active' : '')} key={stage.id}>
+                  <b>{stage.title}</b>
+                  <small>{stage.subtitle}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="career-grid">
                   {careerItems.filter(item => item.stage === stage).map(item => {
                     const available = isCareerItemAvailable(item, completedCareer)
                     const done = completedCareer.includes(item.id)
@@ -909,6 +1009,97 @@ export default function App() {
               <span>التواصل والثقة</span>
               <span>مسار الشركة</span>
             </div>
+          </div>
+        </section>
+      )}
+
+
+      {view === 'portfolio' && (
+        <section className="grid">
+          <div className="card wide">
+            <p className="kicker">Portfolio Projects</p>
+            <h3>مشاريعك العملية للملف المهني</h3>
+            <p className="muted">الهدف أن لا يكون التعلم نظري فقط. كل مشروع هنا يجب أن يصبح قابلًا للشرح في مقابلة.</p>
+          </div>
+
+          <div className="portfolio-grid">
+            {portfolioProjects.map(project => {
+              const progress = getPortfolioProgress(project, completedCareer)
+              return (
+                <div className="card portfolio-card" key={project.id}>
+                  <span>{project.track}</span>
+                  <h3>{project.title}</h3>
+                  <div className="bar big"><div style={{ width: `${progress}%` }} /></div>
+                  <p>التقدم: {progress}%</p>
+                  <div className="project-steps">
+                    {project.steps.map((step, index) => (
+                      <small key={step}>{progress >= ((index + 1) / project.steps.length) * 100 ? '✓' : '☐'} {step}</small>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {view === 'review' && (
+        <section className="grid review-grid">
+          <div className="card wide">
+            <p className="kicker">Weekly Review</p>
+            <h3>{weeklyReview.title}</h3>
+            <p className="muted">{weeklyReview.advice}</p>
+          </div>
+
+          <div className="card review-stat">
+            <p className="kicker">أوامر منجزة</p>
+            <h3>{weeklyReview.orderCount}</h3>
+          </div>
+          <div className="card review-stat">
+            <p className="kicker">مهارات منجزة</p>
+            <h3>{weeklyReview.skillCount}</h3>
+          </div>
+          <div className="card review-stat">
+            <p className="kicker">مشاريع منجزة</p>
+            <h3>{weeklyReview.projectCount}</h3>
+          </div>
+          <div className="card review-stat">
+            <p className="kicker">جاهزية الوظيفة</p>
+            <h3>{weeklyReview.careerReadiness}%</h3>
+          </div>
+        </section>
+      )}
+
+      {view === 'debug' && (
+        <section className="grid debug-grid">
+          <div className="card wide">
+            <p className="kicker">Debug Center</p>
+            <h3>مركز فحص النظام</h3>
+            <p className="muted">هذا القسم مؤقت أثناء التطوير لمراقبة الحفظ والمزامنة.</p>
+          </div>
+
+          <div className="card">
+            <p className="kicker">Cloud</p>
+            <h3>{cloudReady ? 'متصل' : 'غير جاهز'}</h3>
+            <p className="muted">حالة الاتصال مع Supabase.</p>
+          </div>
+
+          <div className="card">
+            <p className="kicker">Prayer Table</p>
+            <h3>{prayerStatus[prayerWindow.current.key] ? 'محفوظة' : 'غير مسجلة'}</h3>
+            <p className="muted">الصلاة الحالية: {prayerWindow.current.label}</p>
+          </div>
+
+          <div className="card">
+            <p className="kicker">Daily Orders</p>
+            <h3>{Object.values(completedOrders || {}).filter(Boolean).length}</h3>
+            <p className="muted">عدد أوامر اليوم المنجزة.</p>
+          </div>
+
+          <div className="card">
+            <p className="kicker">Career Items</p>
+            <h3>{completedCareer.length}</h3>
+            <p className="muted">عدد عناصر المسار المهني المنجزة.</p>
           </div>
         </section>
       )}
