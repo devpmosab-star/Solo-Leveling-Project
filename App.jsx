@@ -620,19 +620,27 @@ export default function App() {
           </section>
 
           <section className="grid main-grid">
-            <div className="card prayer-current">
-              <p className="kicker">الصلاة الحالية</p>
-              <h3>{prayerWindow.current.label}</h3>
-              <p>الصلاة القادمة: {prayerWindow.next.label} بعد {prayerWindow.nextText}</p>
-              <div className="prayer-countdown">
-                <span>الصلاة القادمة</span>
-                <b>{prayerWindow.next.label}</b>
-                <strong>{prayerWindow.nextText}</strong>
-              </div>
-              <p className="muted">ينتهي وقت {prayerWindow.current.label} بعد {prayerWindow.currentText}</p>
-              <button onClick={confirmCurrentPrayer} className={currentPrayerDone ? 'done-button' : ''}>
-                {currentPrayerDone ? 'تم تسجيل الصلاة ✓' : 'تم أداء الصلاة'}
-              </button>
+            <div className={'card prayer-current ' + (currentPrayerDone ? 'prayer-completed' : '')}>
+              {!currentPrayerDone ? (
+                <>
+                  <p className="kicker">الصلاة الحالية</p>
+                  <h3>{prayerWindow.current.label}</h3>
+                  <p>الصلاة القادمة: {prayerWindow.next.label} بعد {prayerWindow.nextText}</p>
+                  <p className="muted">ينتهي وقت {prayerWindow.current.label} بعد {prayerWindow.currentText}</p>
+                  <button onClick={confirmCurrentPrayer}>تم أداء الصلاة</button>
+                </>
+              ) : (
+                <>
+                  <p className="kicker">تم تسجيل الصلاة</p>
+                  <h3>{prayerWindow.current.label} ✓</h3>
+                  <div className="prayer-countdown">
+                    <span>الصلاة القادمة</span>
+                    <b>{prayerWindow.next.label}</b>
+                    <strong>{prayerWindow.nextText}</strong>
+                  </div>
+                  <p className="muted">لن يظهر زر الصلاة مرة أخرى حتى تدخل الصلاة التالية.</p>
+                </>
+              )}
             </div>
 
             <div className="card orders-card">
@@ -640,10 +648,10 @@ export default function App() {
               <h3>Ascend اختار لك التالي</h3>
               <div className="priority-order">
                 <span>الأولوية الآن</span>
-                <b>{todayOrders[0]?.title}</b>
-                <small>{todayOrders[0]?.reason}</small>
+                <b>{todayOrders.filter(order => !(order.type === 'prayer' && currentPrayerDone))[0]?.title || 'لا توجد أوامر متبقية الآن'}</b>
+                <small>{todayOrders.filter(order => !(order.type === 'prayer' && currentPrayerDone))[0]?.reason || 'حافظ على الثبات وانتظر النافذة القادمة.'}</small>
               </div>
-              {todayOrders.map(order => (
+              {todayOrders.filter(order => !(order.type === 'prayer' && currentPrayerDone)).map(order => (
                 <div className={'order ' + (completedOrders[order.id] ? 'done' : '')} key={order.id}>
                   <div>
                     <b>{order.title}</b>

@@ -124,3 +124,18 @@ input{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(255,255,2
   .priority-order b{font-size:20px}
   .prayer-countdown strong{font-size:34px}
 }
+
+/* V2.2 PRAYER NEXT-ONLY STATE */
+.prayer-current.prayer-completed{
+  border-color:rgba(125,255,178,.32);
+  background:
+    radial-gradient(circle at top right,rgba(125,255,178,.12),transparent 42%),
+    var(--panel);
+}
+.prayer-current.prayer-completed h3{
+  color:#dfffea;
+}
+.prayer-current.prayer-completed .prayer-countdown{
+  background:rgba(110,231,255,.07);
+  border-color:rgba(110,231,255,.18);
+}
