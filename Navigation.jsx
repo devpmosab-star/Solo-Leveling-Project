@@ -1,1 +1,0 @@
-export default function Navigation({view,setView}){const items=[['command','اليوم'],['career','المهنة'],['portfolio','المشاريع'],['review','الأسبوع'],['debug','فحص'],['settings','الإعدادات']];return <nav className="nav">{items.map(([k,l])=><button key={k} className={view===k?'active':''} onClick={()=>setView(k)}>{l}</button>)}</nav>}
