@@ -453,6 +453,66 @@ export default function App() {
     setFocusSeconds(25 * 60)
   }
 
+
+  async function resetTestData() {
+    const ok = window.confirm('سيتم مسح تقدم التجربة والرجوع للبداية. هل أنت متأكد؟')
+    if (!ok) return
+
+    const resetProfile = {
+      name: 'مصعب',
+      level: 1,
+      xp: 0,
+      phase: 'مرحلة التأسيس',
+      momentum: 55,
+      focus: 50,
+      energy: 50,
+      professionalValue: 5,
+    }
+
+    setProfile(resetProfile)
+    setEnergyInput(50)
+    setSleepHours(5)
+    setCompletedOrders({})
+    setPrayerStatus({})
+    setCompletedCareer([])
+    setFocusActive(false)
+    setFocusSeconds(25 * 60)
+
+    const user = (await supabase.auth.getUser()).data.user
+    if (user) {
+      await supabase.from('ascend_profiles').upsert({
+        id: user.id,
+        name: 'مصعب',
+        level: 1,
+        xp: 0,
+        phase: 'مرحلة التأسيس',
+        momentum: 55,
+        focus: 50,
+        energy: 50,
+        professional_value: 5,
+        updated_at: new Date().toISOString(),
+      })
+
+      await supabase.from('ascend_daily_logs').upsert({
+        user_id: user.id,
+        log_date: todayKey(),
+        energy_input: 50,
+        sleep_hours: 5,
+        readiness: 50,
+        current_prayer: prayerWindow.current.key,
+        prayer_status: {},
+        orders: todayOrders,
+        completed_orders: {},
+        daily_state: timeState.key,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,log_date' })
+
+      await supabase.from('ascend_career_progress').delete().eq('user_id', user.id)
+    }
+
+    notify('تم تصفير بيانات التجربة')
+  }
+
   async function enableNotifications() {
     if (!('Notification' in window)) return notify('المتصفح لا يدعم الإشعارات')
     const permission = await Notification.requestPermission()
@@ -519,7 +579,7 @@ export default function App() {
         <div className="brand">
           <div className="logo small">A</div>
           <div>
-            <p>ASCEND</p>
+            <p>ASCEND V2.1</p>
             <h1>{profile.name} · {profile.phase}</h1>
           </div>
         </div>
@@ -546,6 +606,7 @@ export default function App() {
               <p>{timeState.priority}</p>
               <div className="hero-pills">
                 <span>جاهزية اليوم: {readiness}%</span>
+                <span>الصلاة الحالية: {prayerWindow.current.label}</span>
                 <span>جاهزية الوظيفة: {careerReadiness}%</span>
                 <span>المستوى: {profile.level}</span>
               </div>
@@ -563,6 +624,11 @@ export default function App() {
               <p className="kicker">الصلاة الحالية</p>
               <h3>{prayerWindow.current.label}</h3>
               <p>الصلاة القادمة: {prayerWindow.next.label} بعد {prayerWindow.nextText}</p>
+              <div className="prayer-countdown">
+                <span>الصلاة القادمة</span>
+                <b>{prayerWindow.next.label}</b>
+                <strong>{prayerWindow.nextText}</strong>
+              </div>
               <p className="muted">ينتهي وقت {prayerWindow.current.label} بعد {prayerWindow.currentText}</p>
               <button onClick={confirmCurrentPrayer} className={currentPrayerDone ? 'done-button' : ''}>
                 {currentPrayerDone ? 'تم تسجيل الصلاة ✓' : 'تم أداء الصلاة'}
@@ -572,6 +638,11 @@ export default function App() {
             <div className="card orders-card">
               <p className="kicker">أوامر اليوم</p>
               <h3>Ascend اختار لك التالي</h3>
+              <div className="priority-order">
+                <span>الأولوية الآن</span>
+                <b>{todayOrders[0]?.title}</b>
+                <small>{todayOrders[0]?.reason}</small>
+              </div>
               {todayOrders.map(order => (
                 <div className={'order ' + (completedOrders[order.id] ? 'done' : '')} key={order.id}>
                   <div>
@@ -640,6 +711,13 @@ export default function App() {
             <p className="kicker">الجاهزية المحسوبة</p>
             <h3>{readiness}%</h3>
             <div className="bar big"><div style={{ width: `${readiness}%` }} /></div>
+          </div>
+
+          <div className="card danger-card">
+            <p className="kicker">وضع التجربة</p>
+            <h3>Reset</h3>
+            <p className="muted">استخدم هذا الزر أثناء التجربة فقط لمسح التقدم والرجوع للبداية.</p>
+            <button className="danger-button" onClick={resetTestData}>تصفير بيانات التجربة</button>
           </div>
         </section>
       )}

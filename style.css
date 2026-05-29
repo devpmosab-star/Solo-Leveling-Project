@@ -43,3 +43,84 @@ input{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(255,255,2
   .nav{position:fixed;right:10px;left:10px;bottom:10px;z-index:50;background:rgba(8,12,24,.9);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);padding:8px;border-radius:22px;justify-content:space-between;margin:0}
   .nav button{flex:1;font-size:13px;padding:12px 8px}.level-card strong{font-size:58px}
 }
+
+/* ASCEND V2.1 RESET + COMMAND CENTER UPGRADE */
+.priority-order{
+  padding:18px;
+  border-radius:22px;
+  margin:14px 0 16px;
+  background:
+    radial-gradient(circle at top right,rgba(110,231,255,.16),transparent 45%),
+    rgba(255,255,255,.055);
+  border:1px solid rgba(110,231,255,.22);
+}
+.priority-order span{
+  display:block;
+  color:var(--blue);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:2px;
+  margin-bottom:8px;
+}
+.priority-order b{
+  display:block;
+  font-size:24px;
+  margin-bottom:6px;
+}
+.priority-order small{
+  color:var(--muted);
+}
+.prayer-countdown{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:6px 14px;
+  align-items:center;
+  margin:14px 0;
+  padding:16px;
+  border-radius:18px;
+  background:rgba(255,209,102,.07);
+  border:1px solid rgba(255,209,102,.18);
+}
+.prayer-countdown span{
+  color:var(--gold);
+  font-size:12px;
+  font-weight:900;
+}
+.prayer-countdown b{
+  font-size:28px;
+}
+.prayer-countdown strong{
+  grid-column:1/-1;
+  font-size:42px;
+  color:var(--gold);
+}
+.danger-card{
+  border-color:rgba(255,92,122,.32)!important;
+  background:rgba(255,92,122,.06)!important;
+}
+.danger-button{
+  background:linear-gradient(135deg,#ef4444,#f97316)!important;
+}
+.order{
+  transition:.18s ease;
+}
+.order:hover{
+  transform:translateY(-2px);
+  border-color:rgba(110,231,255,.20);
+}
+.hero{
+  position:relative;
+  overflow:hidden;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  inset:auto 0 0 0;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--blue),transparent);
+  opacity:.55;
+}
+@media(max-width:860px){
+  .priority-order b{font-size:20px}
+  .prayer-countdown strong{font-size:34px}
+}
