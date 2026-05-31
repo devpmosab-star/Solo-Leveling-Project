@@ -1,11 +1,11 @@
 export async function enableNotifications() {
-  if (!window.OneSignalDeferred) {
-    return { ok: false, message: "OneSignal غير جاهز" };
-  }
-
   try {
-    window.OneSignalDeferred.push(function (OneSignal) {
-      OneSignal.Notifications.requestPermission();
+    if (!window.OneSignalDeferred) {
+      return { ok: false, message: "OneSignal غير جاهز" };
+    }
+
+    window.OneSignalDeferred.push(async function (OneSignal) {
+      await OneSignal.Notifications.requestPermission();
     });
 
     return { ok: true, message: "تم طلب تفعيل الإشعارات" };
